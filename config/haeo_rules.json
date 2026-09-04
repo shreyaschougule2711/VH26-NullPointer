@@ -1,0 +1,90 @@
+{
+  "pressureFormula": {
+    "description": "Weighted composite pressure: P = Wq*Q + Wu*U + Wl*L",
+    "weights": {
+      "queueOccupancy": 0.40,
+      "workerUtilization": 0.35,
+      "latency": 0.25
+    },
+    "thresholds": {
+      "low": 0.30,
+      "medium": 0.55,
+      "high": 0.75
+    },
+    "note": "Score >= high threshold = CRITICAL"
+  },
+  "edfRules": {
+    "agingMultiplierAlpha": 2.5,
+    "agingThresholdSec": 30,
+    "urgencyMultiplierBeta": 40.0,
+    "description": "S_event = B_base + alpha * T_age + beta * U_deadline"
+  },
+  "workerConfig": {
+    "maxQueueCapacity": 5000,
+    "targetLatencyMs": 200,
+    "baseLatencyMs": 15,
+    "haeoClassificationRate": 15000,
+    "criticalProcessingRate": 10000,
+    "batchProcessingRate": 5000,
+    "batchFlushThreshold": 100,
+    "deferredProcessingRate": 2000
+  },
+  "eventSlaRules": {
+    "PAYMENT": {
+      "basePriority": 100,
+      "canDrop": false,
+      "canBatch": false,
+      "canDefer": false,
+      "maxDelayMs": 50,
+      "description": "Mission-critical. Never drop, batch, or defer."
+    },
+    "ORDER": {
+      "basePriority": 80,
+      "canDrop": false,
+      "canBatch": false,
+      "canDefer": false,
+      "maxDelayMs": 100,
+      "description": "Business-critical. Process immediately."
+    },
+    "REFUND": {
+      "basePriority": 90,
+      "canDrop": false,
+      "canBatch": false,
+      "canDefer": false,
+      "maxDelayMs": 100,
+      "description": "Financial compliance. Never drop."
+    },
+    "INVENTORY": {
+      "basePriority": 50,
+      "canDrop": false,
+      "canBatch": true,
+      "canDefer": true,
+      "maxDelayMs": 5000,
+      "description": "Stock updates. Batchable under pressure."
+    },
+    "NOTIFICATION": {
+      "basePriority": 30,
+      "canDrop": false,
+      "canBatch": true,
+      "canDefer": true,
+      "maxDelayMs": 10000,
+      "description": "User alerts. Can batch or defer."
+    },
+    "CLICK": {
+      "basePriority": 10,
+      "canDrop": true,
+      "canBatch": false,
+      "canDefer": true,
+      "maxDelayMs": 30000,
+      "description": "Analytics telemetry. Deferrable, droppable under extreme load."
+    },
+    "LOG": {
+      "basePriority": 5,
+      "canDrop": true,
+      "canBatch": true,
+      "canDefer": true,
+      "maxDelayMs": 60000,
+      "description": "System logs. First to shed under pressure."
+    }
+  }
+}

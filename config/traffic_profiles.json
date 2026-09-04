@@ -1,0 +1,148 @@
+{
+  "scenarios": {
+    "NORMAL": {
+      "label": "Normal Traffic",
+      "description": "Steady-state baseline traffic",
+      "baseEps": 1000,
+      "spikeMultiplier": 1.0,
+      "spikeStartSec": 0,
+      "spikeDurationSec": 60,
+      "rampDownSec": 0,
+      "pattern": "NORMAL",
+      "eventDistribution": {
+        "PAYMENT": 0.15,
+        "ORDER": 0.15,
+        "CLICK": 0.30,
+        "INVENTORY": 0.15,
+        "LOG": 0.15,
+        "NOTIFICATION": 0.10
+      }
+    },
+    "BIG_BILLION_DAY": {
+      "label": "Big Billion Day Sale",
+      "description": "Flipkart-style flash sale: 20x sudden spike at 10s for 20s",
+      "baseEps": 1000,
+      "spikeMultiplier": 20.0,
+      "spikeStartSec": 10,
+      "spikeDurationSec": 20,
+      "rampDownSec": 5,
+      "pattern": "SUDDEN_SPIKE",
+      "eventDistribution": {
+        "PAYMENT": 0.20,
+        "ORDER": 0.20,
+        "CLICK": 0.25,
+        "INVENTORY": 0.15,
+        "LOG": 0.10,
+        "NOTIFICATION": 0.10
+      }
+    },
+    "BLACK_FRIDAY": {
+      "label": "Black Friday",
+      "description": "Extended high-volume shopping event",
+      "baseEps": 1500,
+      "spikeMultiplier": 15.0,
+      "spikeStartSec": 8,
+      "spikeDurationSec": 30,
+      "rampDownSec": 10,
+      "pattern": "SUDDEN_SPIKE",
+      "eventDistribution": {
+        "PAYMENT": 0.25,
+        "ORDER": 0.25,
+        "CLICK": 0.20,
+        "INVENTORY": 0.10,
+        "LOG": 0.10,
+        "NOTIFICATION": 0.10
+      }
+    },
+    "FLASH_SALE": {
+      "label": "Flash Sale",
+      "description": "Short-duration intense spike",
+      "baseEps": 800,
+      "spikeMultiplier": 25.0,
+      "spikeStartSec": 5,
+      "spikeDurationSec": 10,
+      "rampDownSec": 3,
+      "pattern": "SUDDEN_SPIKE",
+      "eventDistribution": {
+        "PAYMENT": 0.30,
+        "ORDER": 0.25,
+        "CLICK": 0.15,
+        "INVENTORY": 0.15,
+        "LOG": 0.05,
+        "NOTIFICATION": 0.10
+      }
+    },
+    "PAYMENT_SPIKE": {
+      "label": "Payment Gateway Spike",
+      "description": "Payment-heavy burst from checkout surge",
+      "baseEps": 500,
+      "spikeMultiplier": 30.0,
+      "spikeStartSec": 5,
+      "spikeDurationSec": 15,
+      "rampDownSec": 5,
+      "pattern": "SUDDEN_SPIKE",
+      "eventDistribution": {
+        "PAYMENT": 0.45,
+        "ORDER": 0.20,
+        "CLICK": 0.10,
+        "INVENTORY": 0.10,
+        "LOG": 0.05,
+        "NOTIFICATION": 0.10
+      }
+    },
+    "NOTIFICATION_STORM": {
+      "label": "Notification Storm",
+      "description": "Push notification broadcast triggers event flood",
+      "baseEps": 600,
+      "spikeMultiplier": 18.0,
+      "spikeStartSec": 3,
+      "spikeDurationSec": 12,
+      "rampDownSec": 4,
+      "pattern": "SUDDEN_SPIKE",
+      "eventDistribution": {
+        "PAYMENT": 0.05,
+        "ORDER": 0.05,
+        "CLICK": 0.35,
+        "INVENTORY": 0.05,
+        "LOG": 0.10,
+        "NOTIFICATION": 0.40
+      }
+    },
+    "GRADUAL_RAMP": {
+      "label": "Gradual Traffic Ramp",
+      "description": "Smooth ramp-up typical of organic growth patterns",
+      "baseEps": 500,
+      "spikeMultiplier": 12.0,
+      "spikeStartSec": 5,
+      "spikeDurationSec": 25,
+      "rampDownSec": 8,
+      "pattern": "GRADUAL_SPIKE",
+      "eventDistribution": {
+        "PAYMENT": 0.15,
+        "ORDER": 0.15,
+        "CLICK": 0.30,
+        "INVENTORY": 0.15,
+        "LOG": 0.15,
+        "NOTIFICATION": 0.10
+      }
+    },
+    "INVENTORY_SYNC": {
+      "label": "Inventory Bulk Sync",
+      "description": "Warehouse sync triggers inventory-heavy event stream",
+      "baseEps": 400,
+      "spikeMultiplier": 20.0,
+      "spikeStartSec": 5,
+      "spikeDurationSec": 15,
+      "rampDownSec": 5,
+      "pattern": "SUDDEN_SPIKE",
+      "eventDistribution": {
+        "PAYMENT": 0.05,
+        "ORDER": 0.05,
+        "CLICK": 0.05,
+        "INVENTORY": 0.60,
+        "LOG": 0.15,
+        "NOTIFICATION": 0.10
+      }
+    }
+  }
+}
