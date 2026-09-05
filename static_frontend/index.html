@@ -1,1588 +1,2022 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="light">
 
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Adaptive Event-Processing Pipeline</title>
+  <title>AEPP Industrial Studio — Production Adaptive Event Processing Platform</title>
   <meta name="description"
-    content="Real-time dashboard for the Adaptive Event Processing Pipeline with intelligent traffic routing, pressure monitoring, and decision analytics." />
+    content="Production-grade adaptive event processing platform featuring dynamic worker scaling, multi-factor EDF scheduling, queue aging, adaptive batching, duplicate detection, and infrastructure cost estimation." />
+
+  <!-- Fonts: Inter & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
     rel="stylesheet" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+            mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
     /* ═══════════════════════════════════════════════════════════ */
-    /*  DESIGN SYSTEM                                             */
+    /*  ENTERPRISE INDUSTRIAL DESIGN SYSTEM: CSS TOKENS           */
     /* ═══════════════════════════════════════════════════════════ */
-    :root {
-      --bg-primary: #0a0e1a;
-      --bg-secondary: #111827;
-      --bg-card: rgba(17, 24, 39, 0.7);
-      --bg-card-hover: rgba(31, 41, 55, 0.8);
-      --border: rgba(255, 255, 255, 0.06);
-      --border-glow: rgba(99, 102, 241, 0.3);
-      --text-primary: #f1f5f9;
-      --text-secondary: #94a3b8;
+    :root, html.light {
+      --bg-canvas: #f8fafc;
+      --bg-surface: #ffffff;
+      --bg-surface-elevated: #ffffff;
+      --bg-subtle: #f1f5f9;
+      --bg-sidebar: #ffffff;
+      --bg-header: #ffffff;
+      --border-color: #e2e8f0;
+      --border-color-subtle: #f1f5f9;
+      --border-color-focus: #2563eb;
+      --text-heading: #0f172a;
+      --text-body: #334155;
       --text-muted: #64748b;
-      --accent: #6366f1;
-      --accent-light: #818cf8;
-      --green: #10b981;
-      --green-glow: rgba(16, 185, 129, 0.3);
-      --blue: #3b82f6;
-      --blue-glow: rgba(59, 130, 246, 0.3);
-      --yellow: #f59e0b;
-      --yellow-glow: rgba(245, 158, 11, 0.3);
-      --orange: #f97316;
-      --red: #ef4444;
-      --red-glow: rgba(239, 68, 68, 0.3);
-      --cyan: #06b6d4;
-      --purple: #a855f7;
-      --font: 'Inter', -apple-system, sans-serif;
-      --mono: 'JetBrains Mono', monospace;
-      --radius: 16px;
-      --radius-sm: 10px;
-      --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      --text-faint: #94a3b8;
+      --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+      --card-shadow-hover: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+      --chart-grid: rgba(226, 232, 240, 0.8);
+      --chart-text: #64748b;
+      --gauge-track: #e2e8f0;
+      --nav-active-bg: #eff6ff;
+      --nav-active-text: #1d4ed8;
+      --nav-active-border: #3b82f6;
     }
 
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    html {
-      font-size: 14px;
+    html.dark {
+      --bg-canvas: #0b0f19;
+      --bg-surface: #111827;
+      --bg-surface-elevated: #1e293b;
+      --bg-subtle: #1e293b;
+      --bg-sidebar: #0f172a;
+      --bg-header: #0f172a;
+      --border-color: #1f293d;
+      --border-color-subtle: #1e293b;
+      --border-color-focus: #3b82f6;
+      --text-heading: #f8fafc;
+      --text-body: #cbd5e1;
+      --text-muted: #94a3b8;
+      --text-faint: #64748b;
+      --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.2);
+      --card-shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
+      --chart-grid: rgba(255, 255, 255, 0.06);
+      --chart-text: #94a3b8;
+      --gauge-track: rgba(255, 255, 255, 0.1);
+      --nav-active-bg: rgba(37, 99, 235, 0.15);
+      --nav-active-text: #60a5fa;
+      --nav-active-border: #3b82f6;
     }
 
     body {
-      font-family: var(--font);
-      background: var(--bg-primary);
-      color: var(--text-primary);
-      min-height: 100vh;
-      overflow-x: hidden;
-      background-image:
-        radial-gradient(ellipse at 20% 0%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
-        radial-gradient(ellipse at 80% 100%, rgba(16, 185, 129, 0.06) 0%, transparent 50%);
+      background-color: var(--bg-canvas);
+      color: var(--text-body);
+      font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+      transition: background-color 0.2s ease, color 0.2s ease;
     }
 
-    /* ═══════════════════════════════════════════════════════════ */
-    /*  GLASS PANELS                                              */
-    /* ═══════════════════════════════════════════════════════════ */
-    .glass {
-      background: var(--bg-card);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    /* Industrial Card Utilities */
+    .industrial-card {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      box-shadow: var(--card-shadow);
+      border-radius: 8px;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
 
-    .glass:hover {
-      border-color: var(--border-glow);
-      box-shadow: var(--shadow), 0 0 20px rgba(99, 102, 241, 0.05);
+    .industrial-card:hover {
+      box-shadow: var(--card-shadow-hover);
+      border-color: var(--border-color-focus);
     }
 
-    /* ═══════════════════════════════════════════════════════════ */
-    /*  LAYOUT                                                    */
-    /* ═══════════════════════════════════════════════════════════ */
-    .container {
-      max-width: 1600px;
-      margin: 0 auto;
-      padding: 20px;
+    .industrial-inner {
+      background-color: var(--bg-subtle);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
     }
 
-    /* Header */
-    .header {
-      display: flex;
+    /* Status Badges */
+    .status-badge {
+      display: inline-flex;
       align-items: center;
-      justify-content: space-between;
-      padding: 16px 24px;
-      margin-bottom: 20px;
-    }
-
-    .header-left {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-
-    .logo {
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
-      background: linear-gradient(135deg, var(--accent), var(--cyan));
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 22px;
-      font-weight: 900;
-      color: #fff;
-      box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
-    }
-
-    .header h1 {
-      font-size: 1.5rem;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-    }
-
-    .header h1 span {
-      color: var(--accent-light);
-    }
-
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .ws-badge {
-      font-size: 0.75rem;
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-family: var(--mono);
-      font-weight: 500;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .ws-badge::before {
-      content: '';
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      display: inline-block;
-      animation: pulse 1.5s infinite;
-    }
-
-    .ws-badge.connected {
-      background: rgba(16, 185, 129, 0.15);
-      color: var(--green);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-    }
-
-    .ws-badge.connected::before {
-      background: var(--green);
-    }
-
-    .ws-badge.disconnected {
-      background: rgba(239, 68, 68, 0.15);
-      color: var(--red);
-      border: 1px solid rgba(239, 68, 68, 0.3);
-    }
-
-    .ws-badge.disconnected::before {
-      background: var(--red);
-      animation: none;
-    }
-
-    .pressure-pill {
-      font-size: 0.8rem;
-      padding: 6px 16px;
-      border-radius: 20px;
+      gap: 0.375rem;
+      padding: 0.1875rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.6875rem;
       font-weight: 700;
-      font-family: var(--mono);
-      letter-spacing: 1px;
-      transition: all 0.3s ease;
-    }
-
-    .pressure-pill.LOW {
-      background: rgba(16, 185, 129, 0.15);
-      color: var(--green);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-    }
-
-    .pressure-pill.MEDIUM {
-      background: rgba(245, 158, 11, 0.15);
-      color: var(--yellow);
-      border: 1px solid rgba(245, 158, 11, 0.3);
-    }
-
-    .pressure-pill.HIGH {
-      background: rgba(249, 115, 22, 0.15);
-      color: var(--orange);
-      border: 1px solid rgba(249, 115, 22, 0.3);
-    }
-
-    .pressure-pill.CRITICAL {
-      background: rgba(239, 68, 68, 0.2);
-      color: var(--red);
-      border: 1px solid rgba(239, 68, 68, 0.4);
-      animation: critPulse 0.8s infinite;
-    }
-
-    @keyframes pulse {
-
-      0%,
-      100% {
-        opacity: 1;
-        transform: scale(1)
-      }
-
-      50% {
-        opacity: 0.4;
-        transform: scale(0.8)
-      }
-    }
-
-    @keyframes critPulse {
-
-      0%,
-      100% {
-        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4)
-      }
-
-      50% {
-        box-shadow: 0 0 12px 4px rgba(239, 68, 68, 0.2)
-      }
-    }
-
-    /* KPI Row */
-    .kpi-row {
-      display: grid;
-      grid-template-columns: repeat(6, 1fr);
-      gap: 12px;
-      margin-bottom: 20px;
-    }
-
-    .kpi-card {
-      padding: 16px 20px;
-      text-align: center;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .kpi-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 3px;
-      border-radius: var(--radius) var(--radius) 0 0;
-    }
-
-    .kpi-card:nth-child(1)::before {
-      background: linear-gradient(90deg, var(--green), var(--cyan));
-    }
-
-    .kpi-card:nth-child(2)::before {
-      background: linear-gradient(90deg, var(--yellow), var(--orange));
-    }
-
-    .kpi-card:nth-child(3)::before {
-      background: linear-gradient(90deg, var(--blue), var(--accent));
-    }
-
-    .kpi-card:nth-child(4)::before {
-      background: linear-gradient(90deg, var(--green), var(--blue));
-    }
-
-    .kpi-card:nth-child(5)::before {
-      background: linear-gradient(90deg, var(--red), var(--orange));
-    }
-
-    .kpi-card:nth-child(6)::before {
-      background: linear-gradient(90deg, var(--accent), var(--purple));
-    }
-
-    .kpi-label {
-      font-size: 0.7rem;
-      color: var(--text-muted);
+      font-family: var(--font-mono);
+      letter-spacing: 0.025em;
       text-transform: uppercase;
-      letter-spacing: 1.5px;
-      font-weight: 600;
-      margin-bottom: 6px;
+      border-width: 1px;
     }
 
-    .kpi-value {
-      font-size: 1.8rem;
-      font-weight: 800;
-      font-family: var(--mono);
-      letter-spacing: -1px;
-      line-height: 1;
+    /* View Navigation */
+    .view-panel {
+      display: none;
+      animation: industrialFade 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    .kpi-sub {
-      font-size: 0.7rem;
-      color: var(--text-secondary);
-      margin-top: 4px;
-      font-family: var(--mono);
+    .view-panel.active {
+      display: block;
     }
 
-    /* Controls */
-    .controls-panel {
-      padding: 20px 24px;
-      margin-bottom: 20px;
+    @keyframes industrialFade {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
-    .controls-header {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      font-weight: 700;
-      margin-bottom: 14px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+    /* Range slider styling */
+    input[type=range] {
+      accent-color: #2563eb;
     }
 
-    .controls-header::before {
-      content: '⚡';
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
     }
-
-    .controls-row {
-      display: flex;
-      gap: 14px;
-      align-items: flex-end;
-      flex-wrap: wrap;
-    }
-
-    .control-group {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-    }
-
-    .control-group label {
-      font-size: 0.7rem;
-      color: var(--text-secondary);
-      font-weight: 500;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    .control-group input,
-    .control-group select {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 10px 14px;
-      color: var(--text-primary);
-      font-family: var(--mono);
-      font-size: 0.85rem;
-      outline: none;
-      transition: border-color 0.2s;
-      width: 140px;
-    }
-
-    .control-group input:focus,
-    .control-group select:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
-    }
-
-    select option {
-      background: var(--bg-secondary);
-      color: var(--text-primary);
-    }
-
-    .btn {
-      padding: 10px 28px;
-      border: none;
-      border-radius: var(--radius-sm);
-      font-family: var(--font);
-      font-weight: 700;
-      font-size: 0.85rem;
-      cursor: pointer;
-      letter-spacing: 0.5px;
-      transition: all 0.2s;
-      text-transform: uppercase;
-    }
-
-    .btn:active {
-      transform: scale(0.97);
-    }
-
-    .btn-start {
-      background: linear-gradient(135deg, var(--green), #059669);
-      color: #fff;
-      box-shadow: 0 4px 16px var(--green-glow);
-    }
-
-    .btn-start:hover {
-      box-shadow: 0 6px 24px var(--green-glow);
-      transform: translateY(-1px);
-    }
-
-    .btn-stop {
-      background: linear-gradient(135deg, var(--red), #dc2626);
-      color: #fff;
-      box-shadow: 0 4px 16px var(--red-glow);
-    }
-
-    .btn-stop:hover {
-      box-shadow: 0 6px 24px var(--red-glow);
-      transform: translateY(-1px);
-    }
-
-    .btn:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-      transform: none !important;
-    }
-
-    .elapsed-display {
-      font-family: var(--mono);
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: var(--accent-light);
-      padding: 10px 18px;
-      background: rgba(99, 102, 241, 0.1);
-      border-radius: var(--radius-sm);
-      border: 1px solid rgba(99, 102, 241, 0.2);
-      min-width: 100px;
-      text-align: center;
-    }
-
-    /* Charts Grid */
-    .charts-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      margin-bottom: 16px;
-    }
-
-    .charts-row-3 {
-      display: grid;
-      grid-template-columns: 2fr 1fr 1fr;
-      gap: 16px;
-      margin-bottom: 16px;
-    }
-
-    .chart-panel {
-      padding: 16px 20px;
-    }
-
-    .chart-title {
-      font-size: 0.7rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      font-weight: 700;
-      margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .chart-title .chart-value {
-      font-family: var(--mono);
-      font-size: 0.9rem;
-      color: var(--text-primary);
-      font-weight: 600;
-    }
-
-    .chart-canvas-wrap {
-      position: relative;
-      width: 100%;
-      height: 180px;
-    }
-
-    .chart-canvas-wrap canvas {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-    }
-
-    /* Gauge */
-    .gauge-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-
-    .gauge-svg {
-      width: 160px;
-      height: 160px;
-    }
-
-    .gauge-label {
-      font-size: 0.7rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      font-weight: 700;
-      margin-bottom: 10px;
-    }
-
-    .gauge-level {
-      font-family: var(--mono);
-      font-size: 1.1rem;
-      font-weight: 800;
-      margin-top: 8px;
-    }
-
-    .gauge-score {
-      font-family: var(--mono);
-      font-size: 0.8rem;
-      color: var(--text-secondary);
-    }
-
-    /* Workers */
-    .workers-panel {
-      padding: 20px 24px;
-    }
-
-    .worker-bar-group {
-      margin-bottom: 14px;
-    }
-
-    .worker-bar-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 6px;
-    }
-
-    .worker-bar-name {
-      font-size: 0.75rem;
-      color: var(--text-secondary);
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    .worker-bar-pct {
-      font-family: var(--mono);
-      font-size: 0.8rem;
-      font-weight: 700;
-    }
-
-    .worker-bar-track {
-      height: 10px;
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 5px;
-      overflow: hidden;
-    }
-
-    .worker-bar-fill {
-      height: 100%;
-      border-radius: 5px;
-      transition: width 0.5s ease, background 0.3s ease;
-    }
-
-    /* Donut */
-    .donut-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-    }
-
-    .donut-canvas-wrap {
-      position: relative;
-      width: 160px;
-      height: 160px;
-    }
-
-    .donut-canvas-wrap canvas {
-      width: 100%;
-      height: 100%;
-    }
-
-    .donut-legend {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px 16px;
-      margin-top: 12px;
-    }
-
-    .donut-legend-item {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.7rem;
-      color: var(--text-secondary);
-    }
-
-    .donut-legend-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-
-    .donut-legend-val {
-      font-family: var(--mono);
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-
-    /* Bottom Row */
-    .bottom-row {
-      display: grid;
-      grid-template-columns: 320px 1fr;
-      gap: 16px;
-      margin-bottom: 16px;
-    }
-
-    /* Decision Table */
-    .decision-table-wrap {
-      padding: 16px 20px;
-      max-height: 380px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .decision-table-title {
-      font-size: 0.7rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      font-weight: 700;
-      margin-bottom: 10px;
-      flex-shrink: 0;
-    }
-
-    .decision-table-scroll {
-      overflow-y: auto;
-      flex: 1;
-    }
-
-    .decision-table-scroll::-webkit-scrollbar {
-      width: 4px;
-    }
-
-    .decision-table-scroll::-webkit-scrollbar-track {
+    ::-webkit-scrollbar-track {
       background: transparent;
     }
-
-    .decision-table-scroll::-webkit-scrollbar-thumb {
-      background: var(--border);
-      border-radius: 2px;
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 3px;
     }
-
-    table.dtable {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.75rem;
-    }
-
-    table.dtable th {
-      position: sticky;
-      top: 0;
-      background: var(--bg-secondary);
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      font-weight: 600;
-      font-size: 0.65rem;
-      padding: 8px 10px;
-      text-align: left;
-      border-bottom: 1px solid var(--border);
-      z-index: 1;
-    }
-
-    table.dtable td {
-      padding: 6px 10px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-      font-family: var(--mono);
-      font-size: 0.72rem;
-      white-space: nowrap;
-    }
-
-    table.dtable tr {
-      transition: background 0.2s;
-    }
-
-    table.dtable tr:hover {
-      background: rgba(255, 255, 255, 0.03);
-    }
-
-    /* Decision & Event badges */
-    .badge {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-size: 0.65rem;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-    }
-
-    .badge-PROCESS {
-      background: rgba(16, 185, 129, 0.15);
-      color: var(--green);
-    }
-
-    .badge-BATCH {
-      background: rgba(59, 130, 246, 0.15);
-      color: var(--blue);
-    }
-
-    .badge-DEFER {
-      background: rgba(245, 158, 11, 0.15);
-      color: var(--yellow);
-    }
-
-    .badge-DROP {
-      background: rgba(239, 68, 68, 0.15);
-      color: var(--red);
-    }
-
-    .badge-PAYMENT {
-      background: rgba(16, 185, 129, 0.15);
-      color: var(--green);
-    }
-
-    .badge-ORDER {
-      background: rgba(59, 130, 246, 0.15);
-      color: var(--blue);
-    }
-
-    .badge-REFUND {
-      background: rgba(168, 85, 247, 0.15);
-      color: var(--purple);
-    }
-
-    .badge-INVENTORY {
-      background: rgba(168, 85, 247, 0.15);
-      color: var(--purple);
-    }
-
-    .badge-CLICK {
-      background: rgba(245, 158, 11, 0.15);
-      color: var(--yellow);
-    }
-
-    .badge-LOG {
-      background: rgba(100, 116, 139, 0.2);
-      color: var(--text-muted);
-    }
-
-    .badge-NOTIFICATION {
-      background: rgba(6, 182, 212, 0.15);
-      color: var(--cyan);
-    }
-
-    .badge-LOW {
-      background: rgba(16, 185, 129, 0.15);
-      color: var(--green);
-    }
-
-    .badge-MEDIUM {
-      background: rgba(245, 158, 11, 0.15);
-      color: var(--yellow);
-    }
-
-    .badge-HIGH {
-      background: rgba(249, 115, 22, 0.15);
-      color: var(--orange);
-    }
-
-    .badge-CRITICAL {
-      background: rgba(239, 68, 68, 0.2);
-      color: var(--red);
-    }
-
-    /* Summary Panel */
-    .summary-panel {
-      padding: 24px 32px;
-      margin-bottom: 20px;
-      background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(16, 185, 129, 0.06));
-      border: 1px solid rgba(99, 102, 241, 0.2);
-    }
-
-    .summary-title {
-      font-size: 1.1rem;
-      font-weight: 800;
-      margin-bottom: 16px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .summary-title::before {
-      content: '✅';
-      font-size: 1.2rem;
-    }
-
-    .summary-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 16px;
-    }
-
-    .summary-item {
-      text-align: center;
-    }
-
-    .summary-item .s-label {
-      font-size: 0.7rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      font-weight: 600;
-      margin-bottom: 4px;
-    }
-
-    .summary-item .s-value {
-      font-family: var(--mono);
-      font-size: 1.4rem;
-      font-weight: 800;
-    }
-
-    .summary-item .s-value.green {
-      color: var(--green);
-    }
-
-    .summary-item .s-value.blue {
-      color: var(--blue);
-    }
-
-    .summary-item .s-value.yellow {
-      color: var(--yellow);
-    }
-
-    .summary-item .s-value.red {
-      color: var(--red);
-    }
-
-    /* Responsive */
-    @media (max-width: 1200px) {
-      .kpi-row {
-        grid-template-columns: repeat(3, 1fr);
-      }
-
-      .charts-row,
-      .charts-row-3 {
-        grid-template-columns: 1fr;
-      }
-
-      .bottom-row {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    @media (max-width: 768px) {
-      .kpi-row {
-        grid-template-columns: repeat(2, 1fr);
-      }
-
-      .controls-row {
-        flex-direction: column;
-      }
-
-      .control-group input,
-      .control-group select {
-        width: 100%;
-      }
-    }
-
-    /* Utility */
-    .hidden {
-      display: none !important;
-    }
-
-    .fade-in {
-      animation: fadeIn 0.4s ease;
-    }
-
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(8px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--text-muted);
     }
   </style>
 </head>
 
-<body>
-  <div class="container">
+<body class="antialiased flex h-screen overflow-hidden select-none text-sm">
 
-    <!-- ═══════ HEADER ═══════ -->
-    <header class="header glass">
-      <div class="header-left">
-        <div class="logo">A</div>
-        <h1><span>Adaptive Event-Processing Pipeline</span></h1>
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- 1. LEFT NAVIGATION SIDEBAR                                  -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <aside id="sidebar" class="w-60 flex flex-col justify-between shrink-0 transition-all duration-200 z-40 border-r"
+    style="background-color: var(--bg-sidebar); border-color: var(--border-color);">
+    
+    <div>
+      <!-- Brand Header -->
+      <div class="h-14 px-4 flex items-center justify-between border-b" style="border-color: var(--border-color);">
+        <div class="flex items-center gap-2.5 overflow-hidden">
+          <div class="w-7 h-7 rounded bg-blue-600 flex items-center justify-center text-white shrink-0 font-bold font-mono text-xs shadow-sm">
+            AE
+          </div>
+          <div class="truncate">
+            <div class="font-bold text-xs tracking-tight flex items-center gap-1.5" style="color: var(--text-heading);">
+              AEPP Studio
+              <span class="text-[9px] font-mono px-1 py-0.2 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 font-semibold">PROD</span>
+            </div>
+            <div class="text-[10px] truncate" style="color: var(--text-muted);">Adaptive Stream Engine</div>
+          </div>
+        </div>
       </div>
-      <div class="header-right">
-        <div id="pressurePill" class="pressure-pill LOW">LOW</div>
-        <div id="wsBadge" class="ws-badge disconnected">DISCONNECTED</div>
+
+      <!-- Navigation Links -->
+      <nav class="p-2 space-y-1 overflow-y-auto max-h-[calc(100vh-140px)]" id="sidebarNav">
+        
+        <div class="px-3 pt-2 pb-1 text-[10px] font-bold tracking-wider uppercase" style="color: var(--text-faint);">Operations</div>
+
+        <a href="#/dashboard" onclick="navigate('dashboard')" class="nav-btn flex items-center gap-2.5 px-3 py-2 rounded text-xs font-semibold transition-all" data-page="dashboard">
+          <i data-lucide="layout-dashboard" class="w-4 h-4 shrink-0 text-blue-600 dark:text-blue-400"></i>
+          <span>Dashboard</span>
+        </a>
+
+        <a href="#/queues" onclick="navigate('queues')" class="nav-btn flex items-center gap-2.5 px-3 py-2 rounded text-xs font-semibold transition-all" data-page="queues">
+          <i data-lucide="layers" class="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400"></i>
+          <span>Queue Health (6-Tier)</span>
+          <span id="navQueueCount" class="ml-auto text-[10px] font-mono px-1.5 py-0.2 rounded font-bold" style="background: var(--bg-subtle); color: var(--text-muted);">0</span>
+        </a>
+
+        <a href="#/workers" onclick="navigate('workers')" class="nav-btn flex items-center gap-2.5 px-3 py-2 rounded text-xs font-semibold transition-all" data-page="workers">
+          <i data-lucide="server" class="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400"></i>
+          <span>Worker Fleet Scaling</span>
+          <span id="navWorkerScaleBadge" class="ml-auto text-[10px] font-mono px-1.5 py-0.2 rounded bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 font-bold">4 W</span>
+        </a>
+
+        <div class="px-3 pt-3 pb-1 text-[10px] font-bold tracking-wider uppercase" style="color: var(--text-faint);">Engine Intelligence</div>
+
+        <a href="#/decisions" onclick="navigate('decisions')" class="nav-btn flex items-center gap-2.5 px-3 py-2 rounded text-xs font-semibold transition-all" data-page="decisions">
+          <i data-lucide="pie-chart" class="w-4 h-4 shrink-0 text-indigo-600 dark:text-indigo-400"></i>
+          <span>EDF Decision Engine</span>
+        </a>
+
+        <a href="#/duplicates" onclick="navigate('duplicates')" class="nav-btn flex items-center gap-2.5 px-3 py-2 rounded text-xs font-semibold transition-all" data-page="duplicates">
+          <i data-lucide="copy-check" class="w-4 h-4 shrink-0 text-violet-600 dark:text-violet-400"></i>
+          <span>Duplicate Shield</span>
+          <span id="navDupCount" class="ml-auto text-[10px] font-mono px-1.5 py-0.2 rounded bg-violet-100 dark:bg-violet-950 text-violet-600 dark:text-violet-400 font-bold">0</span>
+        </a>
+
+        <a href="#/costs" onclick="navigate('costs')" class="nav-btn flex items-center gap-2.5 px-3 py-2 rounded text-xs font-semibold transition-all" data-page="costs">
+          <i data-lucide="coins" class="w-4 h-4 shrink-0 text-teal-600 dark:text-teal-400"></i>
+          <span>Cost Optimization</span>
+          <span id="navCostPct" class="ml-auto text-[10px] font-mono px-1.5 py-0.2 rounded bg-teal-100 dark:bg-teal-950 text-teal-600 dark:text-teal-400 font-bold">0%</span>
+        </a>
+
+        <div class="px-3 pt-3 pb-1 text-[10px] font-bold tracking-wider uppercase" style="color: var(--text-faint);">Control & Audit</div>
+
+        <a href="#/simulator" onclick="navigate('simulator')" class="nav-btn flex items-center gap-2.5 px-3 py-2 rounded text-xs font-semibold transition-all" data-page="simulator">
+          <i data-lucide="sliders" class="w-4 h-4 shrink-0 text-rose-600 dark:text-rose-400"></i>
+          <span>Traffic Spikes & Sliders</span>
+        </a>
+
+        <a href="#/logs" onclick="navigate('logs')" class="nav-btn flex items-center gap-2.5 px-3 py-2 rounded text-xs font-semibold transition-all" data-page="logs">
+          <i data-lucide="file-text" class="w-4 h-4 shrink-0 text-cyan-600 dark:text-cyan-400"></i>
+          <span>Decision Audit Logs</span>
+        </a>
+
+      </nav>
+    </div>
+
+    <!-- Sidebar Footer -->
+    <div class="p-3 border-t text-xs font-mono" style="border-color: var(--border-color); background-color: var(--bg-subtle);">
+      <div class="flex items-center justify-between mb-1">
+        <span class="font-bold flex items-center gap-1.5" style="color: var(--text-heading);">
+          <span id="hostDot" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          PORT 8000
+        </span>
+        <span id="connStatusText" class="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">ONLINE</span>
+      </div>
+      <div class="text-[10px] truncate" style="color: var(--text-muted);">ZERO KAFKA DEPENDENCY</div>
+    </div>
+  </aside>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- 2. TOP NAVIGATION BAR                                       -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+    
+    <header class="h-14 px-5 flex items-center justify-between shrink-0 z-30 border-b"
+      style="background-color: var(--bg-header); border-color: var(--border-color);">
+      
+      <!-- Left: Breadcrumb & Current Profile -->
+      <div class="flex items-center gap-4">
+        <div class="flex items-center gap-2 text-xs">
+          <span style="color: var(--text-muted);" class="font-medium">Cluster</span>
+          <i data-lucide="chevron-right" class="w-3.5 h-3.5" style="color: var(--text-muted);"></i>
+          <span id="breadcrumbText" class="font-bold capitalize" style="color: var(--text-heading);">Dashboard Overview</span>
+        </div>
+
+        <div class="h-4 w-[1px]" style="background-color: var(--border-color);"></div>
+
+        <!-- Quick Scenario Selector -->
+        <div class="flex items-center gap-2">
+          <span class="text-[11px] font-mono font-bold uppercase" style="color: var(--text-muted);">Scenario:</span>
+          <select id="topScenarioSelect" onchange="onTopScenarioChange()"
+            class="text-xs font-semibold rounded px-2.5 py-1 outline-none border cursor-pointer font-mono"
+            style="background-color: var(--bg-surface); border-color: var(--border-color); color: var(--text-heading);">
+            <option value="NORMAL">Normal Ingress (Balanced)</option>
+            <option value="FLASH_SALE">Flash Sale Surge</option>
+            <option value="BIG_BILLION_DAY">Big Billion Day (Extreme Ingress)</option>
+            <option value="BLACK_FRIDAY">Black Friday Peak</option>
+            <option value="RETRY_STORM">Retry Storm Failure</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Right: Pressure Indicator, Run Controls, Theme Toggle -->
+      <div class="flex items-center gap-3">
+        
+        <!-- Live System Pressure Badge -->
+        <div id="topPressureBadge" class="status-badge bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+          <span id="topPressureLabel">PRESSURE: LOW (0.00)</span>
+        </div>
+
+        <!-- Run / Stop Controls -->
+        <div class="flex items-center border rounded overflow-hidden" style="border-color: var(--border-color);">
+          <button id="btnRun" onclick="startSim()" class="px-3 py-1 text-xs font-bold font-mono bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 transition-colors">
+            <i data-lucide="play" class="w-3 h-3 fill-current"></i>
+            <span>RUN</span>
+          </button>
+          <button id="btnStop" onclick="stopSim()" class="px-3 py-1 text-xs font-bold font-mono bg-rose-600 hover:bg-rose-700 text-white flex items-center gap-1.5 transition-colors opacity-50 cursor-not-allowed" disabled>
+            <i data-lucide="square" class="w-3 h-3 fill-current"></i>
+            <span>STOP</span>
+          </button>
+        </div>
+
+        <!-- Burst Trigger Button -->
+        <button onclick="triggerFlashSpike()" class="px-2.5 py-1 text-xs font-bold font-mono border rounded flex items-center gap-1 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          style="border-color: var(--border-color); color: var(--text-heading);" title="Trigger instant flash crowd spike">
+          <i data-lucide="zap" class="w-3 h-3 text-amber-500 fill-amber-500"></i>
+          <span>FLASH SPIKE</span>
+        </button>
+
+        <div class="h-4 w-[1px]" style="background-color: var(--border-color);"></div>
+
+        <!-- White Mode / Dark Mode Toggle Button -->
+        <button onclick="toggleTheme()" id="themeToggleBtn"
+          class="px-2.5 py-1 border rounded text-xs font-bold font-mono flex items-center gap-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          style="border-color: var(--border-color); color: var(--text-heading);" title="Toggle Light / Dark Mode">
+          <i data-lucide="sun" id="themeIcon" class="w-3.5 h-3.5 text-amber-500"></i>
+          <span id="themeText">LIGHT</span>
+        </button>
+
       </div>
     </header>
 
-    <!-- ═══════ KPI ROW ═══════ -->
-    <div class="kpi-row">
-      <div class="kpi-card glass">
-        <div class="kpi-label">Events / sec</div>
-        <div class="kpi-value" id="kpiEps">0</div>
-        <div class="kpi-sub" id="kpiPeakEps">Peak: 0</div>
-      </div>
-      <div class="kpi-card glass">
-        <div class="kpi-label">Avg Latency</div>
-        <div class="kpi-value" id="kpiLatency">0<small style="font-size:0.6em">ms</small></div>
-        <div class="kpi-sub" id="kpiPeakLat">Peak: 0ms</div>
-      </div>
-      <div class="kpi-card glass">
-        <div class="kpi-label">Generated</div>
-        <div class="kpi-value" id="kpiGenerated">0</div>
-        <div class="kpi-sub" id="kpiProcessed">Processed: 0</div>
-      </div>
-      <div class="kpi-card glass">
-        <div class="kpi-label">Batched</div>
-        <div class="kpi-value" id="kpiBatched" style="color:var(--blue)">0</div>
-        <div class="kpi-sub" id="kpiDeferred">Deferred: 0</div>
-      </div>
-      <div class="kpi-card glass">
-        <div class="kpi-label">Dropped</div>
-        <div class="kpi-value" id="kpiDropped" style="color:var(--red)">0</div>
-        <div class="kpi-sub" id="kpiCritLost">Critical Lost: 0</div>
-      </div>
-      <div class="kpi-card glass">
-        <div class="kpi-label">Queue Depth</div>
-        <div class="kpi-value" id="kpiQueue">0</div>
-        <div class="kpi-sub" id="kpiPeakQ">Peak: 0</div>
-      </div>
-    </div>
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- 3. MAIN WORKSPACE VIEWPORT                                  -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <main class="flex-1 overflow-y-auto p-5" id="mainContent">
 
-    <!-- ═══════ TRAFFIC CONTROLS ═══════ -->
-    <div class="controls-panel glass">
-      <div class="controls-header">Traffic Simulation Controls</div>
-      <div class="controls-row">
-        <div class="control-group">
-          <label>Scenario</label>
-          <select id="ctrlScenario">
-            <option value="NORMAL">Loading...</option>
-          </select>
-        </div>
-        <div class="control-group">
-          <label>Base EPS</label>
-          <input id="ctrlBaseEps" type="number" value="1000" min="10" max="100000" />
-        </div>
-        <div class="control-group">
-          <label>Spike ×</label>
-          <input id="ctrlSpike" type="number" value="20" min="1" max="100" step="0.5" />
-        </div>
-        <div class="control-group">
-          <label>Spike Start (s)</label>
-          <input id="ctrlSpikeStart" type="number" value="10" min="0" max="120" />
-        </div>
-        <div class="control-group">
-          <label>Duration (s)</label>
-          <input id="ctrlDuration" type="number" value="20" min="1" max="120" />
-        </div>
-        <div class="control-group">
-          <label>Pattern</label>
-          <select id="ctrlPattern">
-            <option value="SUDDEN_SPIKE">Sudden Spike</option>
-            <option value="GRADUAL_SPIKE">Gradual Spike</option>
-            <option value="RANDOM_BURST">Random Burst</option>
-            <option value="NORMAL">Normal</option>
-          </select>
-        </div>
-        <button id="btnStart" class="btn btn-start" onclick="startSim()">▶ Start</button>
-        <button id="btnStop" class="btn btn-stop" onclick="stopSim()" disabled>■ Stop</button>
-        <div id="elapsedDisp" class="elapsed-display">0.0s</div>
-      </div>
-    </div>
+      <!-- ======================================================= -->
+      <!-- VIEW 1: DASHBOARD                                       -->
+      <!-- ======================================================= -->
+      <section id="view-dashboard" class="view-panel active space-y-4">
+        
+        <!-- SECTION 1: TOP 6 METRIC PODS -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3.5">
+          
+          <!-- Pod 1: Throughput -->
+          <div class="industrial-card p-3.5 flex flex-col justify-between border-l-4 border-l-blue-600">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-bold uppercase tracking-wider" style="color: var(--text-muted);">Throughput</span>
+              <i data-lucide="activity" class="w-4 h-4 text-blue-600"></i>
+            </div>
+            <div class="my-1.5">
+              <div class="flex items-baseline gap-1">
+                <span id="kpiActualEps" class="text-2xl font-bold font-mono" style="color: var(--text-heading);">0</span>
+                <span class="text-xs font-mono font-semibold text-blue-600">EPS</span>
+              </div>
+              <div class="text-[10px] font-mono mt-0.5" style="color: var(--text-muted);">
+                Target: <span id="kpiTargetEps" class="font-bold" style="color: var(--text-heading);">0</span> EPS
+              </div>
+            </div>
+            <div class="text-[10px] font-mono pt-1.5 border-t flex justify-between" style="border-color: var(--border-color-subtle); color: var(--text-muted);">
+              <span>Total Processed:</span>
+              <strong id="kpiTotalProcessed" style="color: var(--text-heading);">0</strong>
+            </div>
+          </div>
 
-    <!-- ═══════ CHARTS ROW 1: Throughput + Latency ═══════ -->
-    <div class="charts-row">
-      <div class="chart-panel glass">
-        <div class="chart-title">
-          Throughput (events/sec)
-          <span class="chart-value" id="chartEpsVal">0 e/s</span>
-        </div>
-        <div class="chart-canvas-wrap"><canvas id="chartThroughput"></canvas></div>
-      </div>
-      <div class="chart-panel glass">
-        <div class="chart-title">
-          Latency (ms)
-          <span class="chart-value" id="chartLatVal">0 ms</span>
-        </div>
-        <div class="chart-canvas-wrap"><canvas id="chartLatency"></canvas></div>
-      </div>
-    </div>
+          <!-- Pod 2: Latency & SLA -->
+          <div class="industrial-card p-3.5 flex flex-col justify-between border-l-4 border-l-amber-500">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-bold uppercase tracking-wider" style="color: var(--text-muted);">Average Latency</span>
+              <i data-lucide="timer" class="w-4 h-4 text-amber-500"></i>
+            </div>
+            <div class="my-1.5">
+              <div class="flex items-baseline gap-1">
+                <span id="kpiLatency" class="text-2xl font-bold font-mono text-amber-600 dark:text-amber-400">0.0</span>
+                <span class="text-xs font-mono font-semibold" style="color: var(--text-muted);">ms</span>
+              </div>
+              <div class="text-[10px] font-mono mt-0.5" style="color: var(--text-muted);">
+                Peak: <span id="kpiPeakLatency" class="font-bold" style="color: var(--text-heading);">0.0 ms</span>
+              </div>
+            </div>
+            <div class="text-[10px] font-mono pt-1.5 border-t flex justify-between" style="border-color: var(--border-color-subtle); color: var(--text-muted);">
+              <span>SLA Target:</span>
+              <strong class="text-emerald-600 dark:text-emerald-400">&lt; 200 ms</strong>
+            </div>
+          </div>
 
-    <!-- ═══════ CHARTS ROW 2: Queue + Gauge + Donut ═══════ -->
-    <div class="charts-row-3">
-      <div class="chart-panel glass">
-        <div class="chart-title">
-          Queue Occupancy
-          <span class="chart-value" id="chartQueueVal">0</span>
-        </div>
-        <div class="chart-canvas-wrap"><canvas id="chartQueue"></canvas></div>
-      </div>
-      <div class="glass gauge-container">
-        <div class="gauge-label">System Pressure</div>
-        <svg class="gauge-svg" viewBox="0 0 120 120" id="gaugeSvg">
-          <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="10" />
-          <circle id="gaugeArc" cx="60" cy="60" r="50" fill="none" stroke="var(--green)" stroke-width="10"
-            stroke-linecap="round" stroke-dasharray="0 314" transform="rotate(-90 60 60)"
-            style="transition: stroke-dasharray 0.5s ease, stroke 0.3s ease;" />
-          <text x="60" y="56" text-anchor="middle" fill="var(--text-primary)" font-family="var(--mono)" font-size="20"
-            font-weight="800" id="gaugePct">0%</text>
-          <text x="60" y="72" text-anchor="middle" fill="var(--text-secondary)" font-family="var(--mono)" font-size="9"
-            font-weight="600" id="gaugeLevel">LOW</text>
-        </svg>
-        <div class="gauge-score" id="gaugeScoreText">Score: 0.00</div>
-      </div>
-      <div class="glass donut-container">
-        <div class="chart-title" style="align-self:flex-start;width:100%">Decision Distribution</div>
-        <div class="donut-canvas-wrap"><canvas id="chartDonut"></canvas></div>
-        <div class="donut-legend">
-          <div class="donut-legend-item">
-            <div class="donut-legend-dot" style="background:var(--green)"></div>Process <span class="donut-legend-val"
-              id="dlProcess">0%</span>
+          <!-- Pod 3: Feature 1 - Adaptive Batching -->
+          <div class="industrial-card p-3.5 flex flex-col justify-between border-l-4 border-l-indigo-600">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-bold uppercase tracking-wider" style="color: var(--text-muted);">Adaptive Batching</span>
+              <i data-lucide="boxes" class="w-4 h-4 text-indigo-600"></i>
+            </div>
+            <div class="my-1.5">
+              <div class="flex items-baseline gap-1">
+                <span class="text-xs font-mono font-semibold" style="color: var(--text-muted);">Batch Size:</span>
+                <span id="kpiAdaptiveBatchSize" class="text-2xl font-bold font-mono text-indigo-600 dark:text-indigo-400">10</span>
+              </div>
+              <div class="text-[10px] font-mono mt-0.5" style="color: var(--text-muted);">
+                Batch Queue: <span id="kpiBatchQueueSize" class="font-bold text-indigo-500">0</span> Events
+              </div>
+            </div>
+            <div class="text-[10px] font-mono pt-1.5 border-t flex flex-col gap-0.5" style="border-color: var(--border-color-subtle); color: var(--text-muted);">
+              <div class="flex justify-between">
+                <span>Batched: <strong id="kpiBatchedTotal" style="color: var(--text-heading);">0</strong></span>
+                <span>Saved Calls: <strong id="kpiBatchCallsSaved" class="text-indigo-600 dark:text-indigo-400">0</strong></span>
+              </div>
+              <div class="flex justify-between">
+                <span>Batch Efficiency:</span>
+                <strong id="kpiBatchEfficiency" class="text-emerald-600 dark:text-emerald-400">0.0%</strong>
+              </div>
+            </div>
           </div>
-          <div class="donut-legend-item">
-            <div class="donut-legend-dot" style="background:var(--blue)"></div>Batch <span class="donut-legend-val"
-              id="dlBatch">0%</span>
-          </div>
-          <div class="donut-legend-item">
-            <div class="donut-legend-dot" style="background:var(--yellow)"></div>Defer <span class="donut-legend-val"
-              id="dlDefer">0%</span>
-          </div>
-          <div class="donut-legend-item">
-            <div class="donut-legend-dot" style="background:var(--red)"></div>Drop <span class="donut-legend-val"
-              id="dlDrop">0%</span>
-          </div>
-        </div>
-      </div>
-    </div>
 
-    <!-- ═══════ BOTTOM ROW: Workers + Decision Table ═══════ -->
-    <div class="bottom-row">
-      <div class="workers-panel glass">
-        <div class="chart-title" style="margin-bottom:16px">Worker Utilization</div>
-        <div class="worker-bar-group" id="workerCritical">
-          <div class="worker-bar-header">
-            <span class="worker-bar-name">⚡ Critical Worker</span>
-            <span class="worker-bar-pct" style="color:var(--green)">0%</span>
+          <!-- Pod 4: Worker Scaling -->
+          <div class="industrial-card p-3.5 flex flex-col justify-between border-l-4 border-l-emerald-600">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-bold uppercase tracking-wider" style="color: var(--text-muted);">Worker Fleet</span>
+              <i data-lucide="server" class="w-4 h-4 text-emerald-600"></i>
+            </div>
+            <div class="my-1.5">
+              <div class="flex items-baseline gap-1">
+                <span id="kpiTotalWorkers" class="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400">4</span>
+                <span class="text-xs font-mono font-semibold" style="color: var(--text-muted);">threads</span>
+              </div>
+              <div class="text-[10px] font-mono mt-0.5" style="color: var(--text-muted);">
+                Mode: <span id="kpiScalingMode" class="font-bold text-blue-600">NORMAL</span>
+              </div>
+            </div>
+            <div class="text-[10px] font-mono pt-1.5 border-t flex justify-between" style="border-color: var(--border-color-subtle); color: var(--text-muted);">
+              <span>Scaled: 4 to 16 threads</span>
+              <span id="kpiEmergencyPill" class="text-[9px] font-mono px-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">NOMINAL</span>
+            </div>
           </div>
-          <div class="worker-bar-track">
-            <div class="worker-bar-fill" style="width:0%;background:var(--green)"></div>
-          </div>
-        </div>
-        <div class="worker-bar-group" id="workerBatch">
-          <div class="worker-bar-header">
-            <span class="worker-bar-name">📦 Batch Worker</span>
-            <span class="worker-bar-pct" style="color:var(--blue)">0%</span>
-          </div>
-          <div class="worker-bar-track">
-            <div class="worker-bar-fill" style="width:0%;background:var(--blue)"></div>
-          </div>
-        </div>
-        <div class="worker-bar-group" id="workerDeferred">
-          <div class="worker-bar-header">
-            <span class="worker-bar-name">⏳ Deferred Worker</span>
-            <span class="worker-bar-pct" style="color:var(--yellow)">0%</span>
-          </div>
-          <div class="worker-bar-track">
-            <div class="worker-bar-fill" style="width:0%;background:var(--yellow)"></div>
-          </div>
-        </div>
-        <!-- Queue breakdown -->
-        <div style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px;">
-          <div class="chart-title" style="margin-bottom:10px">Queue Breakdown</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-family:var(--mono);font-size:0.75rem;">
-            <div>Raw: <span id="qRaw" style="color:var(--text-primary);font-weight:600">0</span></div>
-            <div>Critical: <span id="qCrit" style="color:var(--green);font-weight:600">0</span></div>
-            <div>Batch: <span id="qBatch" style="color:var(--blue);font-weight:600">0</span></div>
-            <div>Deferred: <span id="qDefer" style="color:var(--yellow);font-weight:600">0</span></div>
-          </div>
-        </div>
-      </div>
-      <div class="decision-table-wrap glass">
-        <div class="decision-table-title">Live Decision Stream</div>
-        <div class="decision-table-scroll" id="decTableScroll">
-          <table class="dtable">
-            <thead>
-              <tr>
-                <th>Time</th>
-                <th>Event</th>
-                <th>Queue</th>
-                <th>Pressure</th>
-                <th>Decision</th>
-                <th>Reason</th>
-                <th>Latency</th>
-              </tr>
-            </thead>
-            <tbody id="decTableBody"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
 
-    <!-- ═══════ SUMMARY PANEL (hidden until stop) ═══════ -->
-    <div id="summaryPanel" class="summary-panel glass hidden">
-      <div class="summary-title">Simulation Complete</div>
-      <div class="summary-grid" id="summaryGrid"></div>
-    </div>
+          <!-- Pod 5: Feature 2 - Duplicate Event Reduction -->
+          <div class="industrial-card p-3.5 flex flex-col justify-between border-l-4 border-l-violet-600">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-bold uppercase tracking-wider" style="color: var(--text-muted);">Duplicate Reduction</span>
+              <i data-lucide="copy-check" class="w-4 h-4 text-violet-600"></i>
+            </div>
+            <div class="my-1.5">
+              <div class="flex items-baseline gap-1">
+                <span id="kpiDuplicatesDetected" class="text-2xl font-bold font-mono text-violet-600 dark:text-violet-400">0</span>
+                <span class="text-xs font-mono font-semibold" style="color: var(--text-muted);">dups</span>
+                <span class="text-[10px] font-mono text-violet-500 ml-1">(<span id="kpiDuplicatePct">0.0%</span>)</span>
+              </div>
+              <div class="text-[10px] font-mono mt-0.5" style="color: var(--text-muted);">
+                Proc Saved: <span id="kpiProcessingSaved" class="font-bold text-violet-500">0</span> events
+              </div>
+            </div>
+            <div class="text-[10px] font-mono pt-1.5 border-t flex justify-between" style="border-color: var(--border-color-subtle); color: var(--text-muted);">
+              <span>CPU: <strong id="kpiCpuSaved" class="text-cyan-500">0.0%</strong></span>
+              <span>Mem: <strong id="kpiMemSaved" class="text-violet-500">0.0%</strong></span>
+            </div>
+          </div>
+
+          <!-- Pod 6: Feature 3 - Cost Estimation (Normalized Units) -->
+          <div class="industrial-card p-3.5 flex flex-col justify-between border-l-4 border-l-teal-600">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-bold uppercase tracking-wider" style="color: var(--text-muted);">Cost Estimation</span>
+              <i data-lucide="coins" class="w-4 h-4 text-teal-600"></i>
+            </div>
+            <div class="my-1.5">
+              <div class="flex items-baseline gap-1">
+                <span id="kpiSavingsTotal" class="text-2xl font-bold font-mono text-teal-600 dark:text-teal-400">0</span>
+                <span class="text-xs font-mono font-semibold" style="color: var(--text-muted);">Units</span>
+              </div>
+              <div class="text-[10px] font-mono mt-0.5" style="color: var(--text-muted);">
+                Savings: <span id="kpiSavingsPct" class="font-bold text-emerald-500">0.0%</span>
+              </div>
+            </div>
+            <div class="text-[10px] font-mono pt-1.5 border-t flex justify-between" style="border-color: var(--border-color-subtle); color: var(--text-muted);">
+              <span>Naive: <strong id="kpiCostNaive" style="color: var(--text-heading);">0</strong></span>
+              <span>Adapt: <strong id="kpiCostAdaptive" class="text-teal-600 dark:text-teal-400">0</strong></span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- SECTION 2: THROUGHPUT TIMELINE & PRESSURE GAUGE -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          
+          <!-- Chart 1: Real-time Throughput Stream (2 Cols) -->
+          <div class="lg:col-span-2 industrial-card p-4 flex flex-col">
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center gap-2">
+                <i data-lucide="line-chart" class="w-4 h-4 text-blue-600"></i>
+                <span class="font-bold text-xs uppercase tracking-wider" style="color: var(--text-heading);">Live Throughput vs Ingestion Stream (EPS)</span>
+              </div>
+              <div class="flex items-center gap-3 text-xs font-mono">
+                <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-blue-600"></span> Ingress Target</span>
+                <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Processed EPS</span>
+              </div>
+            </div>
+            <div class="h-56 relative w-full">
+              <canvas id="chartThroughput"></canvas>
+            </div>
+          </div>
+
+          <!-- Dynamic Pressure Radial Arc Gauge (1 Col) -->
+          <div class="industrial-card p-4 flex flex-col justify-between">
+            <div class="flex items-center justify-between mb-1">
+              <div class="flex items-center gap-2">
+                <i data-lucide="gauge" class="w-4 h-4 text-purple-600"></i>
+                <span class="font-bold text-xs uppercase tracking-wider" style="color: var(--text-heading);">System Pressure Score</span>
+              </div>
+              <span id="pressureCardBadge" class="status-badge bg-emerald-50 text-emerald-700 border-emerald-200">LOW</span>
+            </div>
+
+            <!-- SVG Arc Gauge -->
+            <div class="relative w-36 h-36 mx-auto flex items-center justify-center my-2">
+              <svg class="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r="50" fill="none" stroke="var(--gauge-track)" stroke-width="10"></circle>
+                <circle id="gaugePressureArc" cx="60" cy="60" r="50" fill="none" stroke="#2563eb" stroke-width="10"
+                  stroke-linecap="round" stroke-dasharray="314.15" stroke-dashoffset="314.15"
+                  class="transition-all duration-300"></circle>
+              </svg>
+              <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+                <span id="gaugePressurePct" class="text-2xl font-bold font-mono" style="color: var(--text-heading);">0%</span>
+                <span id="gaugePressureVal" class="text-[11px] font-mono" style="color: var(--text-muted);">0.00 / 1.00</span>
+              </div>
+            </div>
+
+            <!-- Sub-Components: Queue (40%), Worker (35%), Latency (25%) -->
+            <div class="grid grid-cols-3 gap-2 pt-2 border-t font-mono text-center text-xs" style="border-color: var(--border-color);">
+              <div class="p-1.5 rounded industrial-inner">
+                <div class="text-[9px]" style="color: var(--text-muted);">Queue (40%)</div>
+                <div id="subPressureQ" class="font-bold" style="color: var(--text-heading);">0.00</div>
+              </div>
+              <div class="p-1.5 rounded industrial-inner">
+                <div class="text-[9px]" style="color: var(--text-muted);">Worker (35%)</div>
+                <div id="subPressureW" class="font-bold" style="color: var(--text-heading);">0.00</div>
+              </div>
+              <div class="p-1.5 rounded industrial-inner">
+                <div class="text-[9px]" style="color: var(--text-muted);">Latency (25%)</div>
+                <div id="subPressureL" class="font-bold" style="color: var(--text-heading);">0.00</div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- SECTION 3: 6-TIER QUEUES HEALTH & DECISION DISTRIBUTION ROW -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 font-mono text-xs">
+          
+          <!-- 6-Tier Queues Backlog & Aging -->
+          <div class="industrial-card p-4 space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <i data-lucide="layers" class="w-4 h-4 text-amber-500"></i>
+                <span class="font-bold uppercase tracking-wider" style="color: var(--text-heading);">6-Tier Queue Topology</span>
+              </div>
+              <div class="flex items-center gap-2 text-[10px]">
+                <span class="text-purple-600 font-bold">Aging Escalations: <span id="kpiAgingEscalations">0</span></span>
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <!-- Critical Queue -->
+              <div>
+                <div class="flex justify-between text-[11px] mb-1">
+                  <span class="font-bold text-blue-600 flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span> 1. Critical Queue (Payment/Orders/Auth/Security)
+                  </span>
+                  <span id="qCritText" class="font-bold">0 / 5,000</span>
+                </div>
+                <div class="w-full h-1.5 rounded bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                  <div id="qCritBar" class="h-full bg-blue-600 transition-all duration-300" style="width: 0%;"></div>
+                </div>
+              </div>
+
+              <!-- Batch Queue -->
+              <div>
+                <div class="flex justify-between text-[11px] mb-1">
+                  <span class="font-bold text-indigo-600 flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-indigo-600"></span> 2. Batch Queue (Inventory/Notif/Email/Analytics)
+                  </span>
+                  <span id="qBatchText" class="font-bold">0 / 5,000</span>
+                </div>
+                <div class="w-full h-1.5 rounded bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                  <div id="qBatchBar" class="h-full bg-indigo-600 transition-all duration-300" style="width: 0%;"></div>
+                </div>
+              </div>
+
+              <!-- Deferred Queue -->
+              <div>
+                <div class="flex justify-between text-[11px] mb-1">
+                  <span class="font-bold text-amber-600 flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> 3. Deferred Queue (Clickstream/Logs/Metrics/Aging)
+                  </span>
+                  <span id="qDefText" class="font-bold">0 / 5,000</span>
+                </div>
+                <div class="w-full h-1.5 rounded bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                  <div id="qDefBar" class="h-full bg-amber-500 transition-all duration-300" style="width: 0%;"></div>
+                </div>
+              </div>
+
+              <!-- Retry Queue -->
+              <div>
+                <div class="flex justify-between text-[11px] mb-1">
+                  <span class="font-bold text-purple-600 flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-purple-600"></span> 4. Retry Queue (Fault Tolerance & Backoff)
+                  </span>
+                  <span id="qRetryText" class="font-bold">0 items</span>
+                </div>
+                <div class="w-full h-1.5 rounded bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                  <div id="qRetryBar" class="h-full bg-purple-600 transition-all duration-300" style="width: 0%;"></div>
+                </div>
+              </div>
+
+              <!-- Duplicate Queue -->
+              <div>
+                <div class="flex justify-between text-[11px] mb-1">
+                  <span class="font-bold text-violet-600 flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-violet-600"></span> 5. Duplicate Quarantine (Rule 1/2/3 Intercepted)
+                  </span>
+                  <span id="qDupText" class="font-bold">0 quarantined</span>
+                </div>
+                <div class="w-full h-1.5 rounded bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                  <div id="qDupBar" class="h-full bg-violet-600 transition-all duration-300" style="width: 0%;"></div>
+                </div>
+              </div>
+
+              <!-- Dead Letter Queue (DLQ) -->
+              <div>
+                <div class="flex justify-between text-[11px] mb-1">
+                  <span class="font-bold text-rose-600 flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span> 6. Dead Letter Queue (Max Retries Exceeded)
+                  </span>
+                  <span id="qDlqText" class="font-bold">0 items</span>
+                </div>
+                <div class="w-full h-1.5 rounded bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                  <div id="qDlqBar" class="h-full bg-rose-600 transition-all duration-300" style="width: 0%;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Decision Distribution & Rule Status -->
+          <div class="industrial-card p-4 space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <i data-lucide="pie-chart" class="w-4 h-4 text-indigo-500"></i>
+                <span class="font-bold uppercase tracking-wider" style="color: var(--text-heading);">Adaptive Decisions Distribution</span>
+              </div>
+              <span id="activeRuleText" class="text-[10px] px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 font-bold border border-blue-200 dark:border-blue-800">NORMAL_BALANCED</span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 items-center">
+              <div class="h-44 relative flex items-center justify-center">
+                <canvas id="chartDecisionPie"></canvas>
+              </div>
+
+              <div class="space-y-2 text-xs">
+                <div class="flex justify-between items-center p-1.5 rounded industrial-inner">
+                  <span class="text-blue-600 font-bold flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-blue-600"></span> PROCESS</span>
+                  <strong id="pctProcess">0.0%</strong>
+                </div>
+                <div class="flex justify-between items-center p-1.5 rounded industrial-inner">
+                  <span class="text-indigo-600 font-bold flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-indigo-600"></span> BATCH</span>
+                  <strong id="pctBatch">0.0%</strong>
+                </div>
+                <div class="flex justify-between items-center p-1.5 rounded industrial-inner">
+                  <span class="text-amber-600 font-bold flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-500"></span> DEFER</span>
+                  <strong id="pctDefer">0.0%</strong>
+                </div>
+                <div class="flex justify-between items-center p-1.5 rounded industrial-inner">
+                  <span class="text-purple-600 font-bold flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-purple-600"></span> RETRY</span>
+                  <strong id="pctRetry">0.0%</strong>
+                </div>
+                <div class="flex justify-between items-center p-1.5 rounded industrial-inner">
+                  <span class="text-rose-600 font-bold flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-rose-600"></span> DROP</span>
+                  <strong id="pctDrop">0.0%</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- SECTION 4: LIVE DECISION ENGINE AUDIT STREAM -->
+        <div class="industrial-card p-4 space-y-3 font-mono text-xs">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <i data-lucide="list" class="w-4 h-4 text-cyan-600"></i>
+              <span class="font-bold uppercase tracking-wider" style="color: var(--text-heading);">Live Decision Audit Trail (EDF & Multi-Factor Scores)</span>
+            </div>
+            <span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> STREAMING DECISIONS
+            </span>
+          </div>
+
+          <div class="overflow-x-auto max-h-56 overflow-y-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="sticky top-0 border-b text-[10px] uppercase font-bold" style="background-color: var(--bg-surface); border-color: var(--border-color); color: var(--text-muted);">
+                <tr>
+                  <th class="py-2 px-3">Time</th>
+                  <th class="py-2 px-3">Event ID</th>
+                  <th class="py-2 px-3">Type</th>
+                  <th class="py-2 px-3">Priority</th>
+                  <th class="py-2 px-3">EDF Urgency</th>
+                  <th class="py-2 px-3">Pressure</th>
+                  <th class="py-2 px-3">Decision</th>
+                  <th class="py-2 px-3">Reason / Aging</th>
+                  <th class="py-2 px-3 text-right">Latency</th>
+                </tr>
+              </thead>
+              <tbody id="decisionTableBody" class="divide-y" style="border-color: var(--border-color);">
+                <tr>
+                  <td colspan="9" class="py-6 text-center text-xs" style="color: var(--text-muted);">
+                    Waiting for simulation events... Click RUN to start traffic.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ======================================================= -->
+      <!-- VIEW 2: QUEUE TOPOLOGY & HEALTH (Requirement 1 & 10)    -->
+      <!-- ======================================================= -->
+      <section id="view-queues" class="view-panel space-y-4 font-mono text-xs">
+        <div>
+          <h2 class="text-base font-bold flex items-center gap-2" style="color: var(--text-heading);">
+            <i data-lucide="layers" class="w-5 h-5 text-amber-500"></i>
+            Queue Health & Multi-Tier Topology
+          </h2>
+          <p class="text-xs font-sans" style="color: var(--text-muted);">Real-time metrics: queue depth, growth rate, waiting times, and aging escalations.</p>
+        </div>
+
+        <!-- Queue KPI Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div class="industrial-card p-4 space-y-2 border-t-2 border-t-blue-600">
+            <span class="text-xs font-bold text-blue-600">Critical Queue (Priority 90-100)</span>
+            <div class="text-2xl font-bold" id="qDetCritVal" style="color: var(--text-heading);">0</div>
+            <p class="text-[11px] font-sans" style="color: var(--text-muted);">Payment, Orders, Auth, Security. Never dropped, never batched.</p>
+          </div>
+
+          <div class="industrial-card p-4 space-y-2 border-t-2 border-t-indigo-600">
+            <span class="text-xs font-bold text-indigo-600">Batch Queue (Priority 40-60)</span>
+            <div class="text-2xl font-bold" id="qDetBatchVal" style="color: var(--text-heading);">0</div>
+            <p class="text-[11px] font-sans" style="color: var(--text-muted);">Inventory, Notifications, Email, Analytics. Adaptive batch size.</p>
+          </div>
+
+          <div class="industrial-card p-4 space-y-2 border-t-2 border-t-amber-500">
+            <span class="text-xs font-bold text-amber-500">Deferred Queue (Priority 10-25)</span>
+            <div class="text-2xl font-bold" id="qDetDefVal" style="color: var(--text-heading);">0</div>
+            <p class="text-[11px] font-sans" style="color: var(--text-muted);">Clickstream, Logs, Metrics. Aging > 20s escalates priority.</p>
+          </div>
+
+          <div class="industrial-card p-4 space-y-2 border-t-2 border-t-purple-600">
+            <span class="text-xs font-bold text-purple-600">Retry Queue</span>
+            <div class="text-2xl font-bold" id="qDetRetryVal" style="color: var(--text-heading);">0</div>
+            <p class="text-[11px] font-sans" style="color: var(--text-muted);">Transient failures under exponential backoff re-dispatch.</p>
+          </div>
+        </div>
+
+        <!-- Queue Telemetry Health Details -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="industrial-card p-4 space-y-2">
+            <span class="text-xs font-bold uppercase" style="color: var(--text-muted);">Queue Growth Rate</span>
+            <div class="text-2xl font-bold" id="qDetGrowthRate" style="color: var(--text-heading);">0.0 items/s</div>
+            <p class="text-[11px] font-sans" style="color: var(--text-muted);">Rate of incoming vs dispatched queue expansion.</p>
+          </div>
+
+          <div class="industrial-card p-4 space-y-2">
+            <span class="text-xs font-bold uppercase" style="color: var(--text-muted);">Starvation Prevention (Aging)</span>
+            <div class="text-2xl font-bold text-emerald-600" id="qDetAgingTotal">0 escalations</div>
+            <p class="text-[11px] font-sans" style="color: var(--text-muted);">Deferred events promoted when wait time exceeds 20 seconds.</p>
+          </div>
+
+          <div class="industrial-card p-4 space-y-2">
+            <span class="text-xs font-bold uppercase text-rose-600">Dead Letter Queue (DLQ)</span>
+            <div class="text-2xl font-bold text-rose-600" id="qDetDlqVal">0 items</div>
+            <button onclick="purgeDLQ()" class="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded text-[11px] font-bold">
+              Purge DLQ
+            </button>
+          </div>
+        </div>
+
+        <!-- Feature 1: Adaptive Batching Panel -->
+        <div class="industrial-card p-5 space-y-4 border-l-4 border-l-indigo-600">
+          <div class="flex justify-between items-center">
+            <div>
+              <div class="font-bold text-sm text-indigo-600">Feature 1: Adaptive Batching Engine</div>
+              <p class="text-[11px] font-sans" style="color: var(--text-muted);">Dynamically scales batch sizes during spikes so 1 worker operation processes up to 200 events instead of individual context switches.</p>
+            </div>
+            <span class="status-badge bg-indigo-50 text-indigo-700 border-indigo-200">ACTIVE</span>
+          </div>
+
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div class="p-3 rounded industrial-inner">
+              <span class="text-[10px]" style="color: var(--text-muted);">Current Batch Size:</span>
+              <div class="text-xl font-bold font-mono text-indigo-600" id="batchEngineCurrentSize">10</div>
+            </div>
+            <div class="p-3 rounded industrial-inner">
+              <span class="text-[10px]" style="color: var(--text-muted);">Batch Queue:</span>
+              <div class="text-xl font-bold font-mono" id="batchEngineQueue" style="color: var(--text-heading);">0 Events</div>
+            </div>
+            <div class="p-3 rounded industrial-inner">
+              <span class="text-[10px]" style="color: var(--text-muted);">Events Batched:</span>
+              <div class="text-xl font-bold font-mono text-blue-600" id="batchEngineBatched">0</div>
+            </div>
+            <div class="p-3 rounded industrial-inner">
+              <span class="text-[10px]" style="color: var(--text-muted);">Worker Calls Saved:</span>
+              <div class="text-xl font-bold font-mono text-emerald-600" id="batchEngineCallsSaved">0</div>
+            </div>
+            <div class="p-3 rounded industrial-inner">
+              <span class="text-[10px]" style="color: var(--text-muted);">Batch Efficiency:</span>
+              <div class="text-xl font-bold font-mono text-teal-600" id="batchEngineEfficiency">0.0%</div>
+            </div>
+          </div>
+
+          <div class="p-3 rounded industrial-inner space-y-1.5">
+            <div class="font-bold text-xs" style="color: var(--text-heading);">Adaptive Batch Size Thresholds:</div>
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 text-[11px] font-sans">
+              <div>Queue &lt; 500: <strong class="font-mono text-indigo-600">Batch = 10</strong></div>
+              <div>Queue &gt; 1,000: <strong class="font-mono text-indigo-600">Batch = 25</strong></div>
+              <div>Queue &gt; 3,000: <strong class="font-mono text-indigo-600">Batch = 50</strong></div>
+              <div>Queue &gt; 5,000: <strong class="font-mono text-indigo-600">Batch = 100</strong></div>
+              <div>Queue &gt; 10,000: <strong class="font-mono text-indigo-600">Batch = 200</strong></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================================================= -->
+      <!-- VIEW 3: WORKER FLEET & DYNAMIC SCALING (Requirement 6 & 11) -->
+      <!-- ======================================================= -->
+      <section id="view-workers" class="view-panel space-y-4 font-mono text-xs">
+        <div>
+          <h2 class="text-base font-bold flex items-center gap-2" style="color: var(--text-heading);">
+            <i data-lucide="server" class="w-5 h-5 text-emerald-500"></i>
+            Dynamic Worker Fleet Scaling & Thread Health
+          </h2>
+          <p class="text-xs font-sans" style="color: var(--text-muted);">Autonomous worker scaling adapting from 4 threads up to 16 threads under emergency load.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <!-- Critical Worker Pool -->
+          <div class="industrial-card p-4 space-y-3 border-t-2 border-t-blue-600">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-bold text-blue-600">Critical Pool</span>
+              <span id="wCritActiveCount" class="status-badge bg-blue-50 text-blue-700 border-blue-200">2 THREADS</span>
+            </div>
+            <div class="text-2xl font-bold" id="wCritUtil" style="color: var(--text-heading);">0.0%</div>
+            <div class="w-full h-2 rounded bg-slate-100 dark:bg-slate-800 overflow-hidden">
+              <div id="wCritBar" class="h-full bg-blue-600 transition-all duration-300" style="width: 0%;"></div>
+            </div>
+            <div class="text-[11px] font-sans" style="color: var(--text-muted);">
+              Current: <span id="wCritCurEvt" class="font-bold text-blue-600">IDLE</span>
+            </div>
+          </div>
+
+          <!-- Batch Worker Pool -->
+          <div class="industrial-card p-4 space-y-3 border-t-2 border-t-indigo-600">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-bold text-indigo-600">Batch Pool</span>
+              <span id="wBatchActiveCount" class="status-badge bg-indigo-50 text-indigo-700 border-indigo-200">1 THREAD</span>
+            </div>
+            <div class="text-2xl font-bold" id="wBatchUtil" style="color: var(--text-heading);">0.0%</div>
+            <div class="w-full h-2 rounded bg-slate-100 dark:bg-slate-800 overflow-hidden">
+              <div id="wBatchBar" class="h-full bg-indigo-600 transition-all duration-300" style="width: 0%;"></div>
+            </div>
+            <div class="text-[11px] font-sans" style="color: var(--text-muted);">
+              Current: <span id="wBatchCurEvt" class="font-bold text-indigo-600">IDLE</span>
+            </div>
+          </div>
+
+          <!-- Deferred Worker Pool -->
+          <div class="industrial-card p-4 space-y-3 border-t-2 border-t-amber-500">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-bold text-amber-500">Deferred Pool</span>
+              <span id="wDefActiveCount" class="status-badge bg-amber-50 text-amber-700 border-amber-200">1 THREAD</span>
+            </div>
+            <div class="text-2xl font-bold" id="wDefUtil" style="color: var(--text-heading);">0.0%</div>
+            <div class="w-full h-2 rounded bg-slate-100 dark:bg-slate-800 overflow-hidden">
+              <div id="wDefBar" class="h-full bg-amber-500 transition-all duration-300" style="width: 0%;"></div>
+            </div>
+            <div class="text-[11px] font-sans" style="color: var(--text-muted);">
+              Current: <span id="wDefCurEvt" class="font-bold text-amber-500">IDLE</span>
+            </div>
+          </div>
+
+          <!-- Retry Worker Pool -->
+          <div class="industrial-card p-4 space-y-3 border-t-2 border-t-purple-600">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-bold text-purple-600">Retry Pool</span>
+              <span id="wRetryActiveCount" class="status-badge bg-purple-50 text-purple-700 border-purple-200">1 THREAD</span>
+            </div>
+            <div class="text-2xl font-bold" id="wRetryUtil" style="color: var(--text-heading);">0.0%</div>
+            <div class="w-full h-2 rounded bg-slate-100 dark:bg-slate-800 overflow-hidden">
+              <div id="wRetryBar" class="h-full bg-purple-600 transition-all duration-300" style="width: 0%;"></div>
+            </div>
+            <div class="text-[11px] font-sans" style="color: var(--text-muted);">
+              Current: <span id="wRetryCurEvt" class="font-bold text-purple-600">IDLE</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scaling Rules Matrix Card -->
+        <div class="industrial-card p-4 space-y-3">
+          <div class="font-bold text-sm" style="color: var(--text-heading);">Autonomous Scaling Rule Matrix:</div>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
+            <div class="p-3 rounded industrial-inner">
+              <div class="font-bold text-emerald-600">P &lt; 40% (Normal)</div>
+              <div class="text-[11px] font-sans mt-1" style="color: var(--text-muted);">Crit: 2 | Batch: 1 | Def: 1 (Total: 4)</div>
+            </div>
+            <div class="p-3 rounded industrial-inner">
+              <div class="font-bold text-blue-600">40% ≤ P &lt; 80% (Elevated)</div>
+              <div class="text-[11px] font-sans mt-1" style="color: var(--text-muted);">Crit: 4 | Batch: 2 | Def: 2 (Total: 8)</div>
+            </div>
+            <div class="p-3 rounded industrial-inner">
+              <div class="font-bold text-amber-600">80% ≤ P &lt; 95% (High Load)</div>
+              <div class="text-[11px] font-sans mt-1" style="color: var(--text-muted);">Crit: 6 | Batch: 4 | Def: 2 (Total: 12)</div>
+            </div>
+            <div class="p-3 rounded industrial-inner">
+              <div class="font-bold text-rose-600">P ≥ 95% (Emergency)</div>
+              <div class="text-[11px] font-sans mt-1" style="color: var(--text-muted);">Crit: 8 | Batch: 6 | Def: 2 (Total: 16)</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================================================= -->
+      <!-- VIEW 4: EDF DECISION ENGINE (Requirement 8 & 9)         -->
+      <!-- ======================================================= -->
+      <section id="view-decisions" class="view-panel space-y-4 font-mono text-xs">
+        <div>
+          <h2 class="text-base font-bold flex items-center gap-2" style="color: var(--text-heading);">
+            <i data-lucide="pie-chart" class="w-5 h-5 text-indigo-500"></i>
+            EDF-Inspired Multi-Factor Decision Scoring Engine
+          </h2>
+          <p class="text-xs font-sans" style="color: var(--text-muted);">Combines Priority, Earliest Deadline First (EDF), System Pressure, Queue Depth, and Worker Availability.</p>
+        </div>
+
+        <div class="industrial-card p-5 space-y-4">
+          <div class="font-bold text-sm" style="color: var(--text-heading);">Multi-Factor Evaluation Equation:</div>
+          <div class="p-3 rounded industrial-inner text-blue-600 dark:text-blue-400 font-bold">
+            Composite Score = f(Priority, Deadline_Urgency, System_Pressure, Queue_Depth, Worker_Stress)
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
+            <div class="p-3 rounded industrial-inner">
+              <div class="font-bold text-blue-600">Earliest Deadline First (EDF)</div>
+              <div class="text-[11px] font-sans mt-1" style="color: var(--text-muted);">Urgency dynamically calculated from remaining time to SLA deadline.</div>
+            </div>
+            <div class="p-3 rounded industrial-inner">
+              <div class="font-bold text-indigo-600">Adaptive Batching Threshold</div>
+              <div class="text-[11px] font-sans mt-1" style="color: var(--text-muted);">Automatically groups medium events in dynamic batch sizes (10 to 200).</div>
+            </div>
+            <div class="p-3 rounded industrial-inner">
+              <div class="font-bold text-amber-600">Starvation Aging Relief</div>
+              <div class="text-[11px] font-sans mt-1" style="color: var(--text-muted);">Escalates deferred low-priority events to prevent infinite delay.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================================================= -->
+      <!-- VIEW 5: DUPLICATE SHIELD (Feature 2)                    -->
+      <!-- ======================================================= -->
+      <section id="view-duplicates" class="view-panel space-y-4 font-mono text-xs">
+        <div>
+          <h2 class="text-base font-bold flex items-center gap-2" style="color: var(--text-heading);">
+            <i data-lucide="copy-check" class="w-5 h-5 text-violet-500"></i>
+            Feature 2: Duplicate Event Reduction Shield
+          </h2>
+          <p class="text-xs font-sans" style="color: var(--text-muted);">Pre-engine duplicate detection using Event ID collisions, SHA-256 payload hashes with a 30s sliding window, and completed retry cache.</p>
+        </div>
+
+        <!-- 5 Requested Feature 2 KPI Cards -->
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          <div class="industrial-card p-3 border-l-4 border-l-violet-600">
+            <span class="text-[10px] font-bold text-violet-600 uppercase">Duplicate Events</span>
+            <div class="text-xl font-bold font-mono mt-1" id="dupDetCount" style="color: var(--text-heading);">0</div>
+            <div class="text-[10px] font-sans" style="color: var(--text-muted);">Total intercepted</div>
+          </div>
+          <div class="industrial-card p-3 border-l-4 border-l-purple-600">
+            <span class="text-[10px] font-bold text-purple-600 uppercase">Duplicate %</span>
+            <div class="text-xl font-bold font-mono mt-1 text-purple-600" id="dupDetPct">0.0%</div>
+            <div class="text-[10px] font-sans" style="color: var(--text-muted);">Of total ingress</div>
+          </div>
+          <div class="industrial-card p-3 border-l-4 border-l-indigo-600">
+            <span class="text-[10px] font-bold text-indigo-600 uppercase">Processing Saved</span>
+            <div class="text-xl font-bold font-mono mt-1 text-indigo-600" id="dupDetProcSaved">0</div>
+            <div class="text-[10px] font-sans" style="color: var(--text-muted);">Worker calls spared</div>
+          </div>
+          <div class="industrial-card p-3 border-l-4 border-l-cyan-600">
+            <span class="text-[10px] font-bold text-cyan-600 uppercase">CPU Saved</span>
+            <div class="text-xl font-bold font-mono mt-1 text-cyan-600" id="dupDetCpuSaved">0.0%</div>
+            <div class="text-[10px] font-sans" style="color: var(--text-muted);">Compute overhead avoided</div>
+          </div>
+          <div class="industrial-card p-3 border-l-4 border-l-emerald-600">
+            <span class="text-[10px] font-bold text-emerald-600 uppercase">Memory Saved</span>
+            <div class="text-xl font-bold font-mono mt-1 text-emerald-600" id="dupDetMemSaved">0.0%</div>
+            <div class="text-[10px] font-sans" style="color: var(--text-muted);">Buffer footprint freed</div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="industrial-card p-4 space-y-2 border-l-4 border-l-violet-600">
+            <span class="text-xs font-bold text-violet-600">Rule 1: Same Event ID Collision</span>
+            <div class="text-2xl font-bold" id="dupRule1Count" style="color: var(--text-heading);">0</div>
+            <div class="text-[11px] font-sans" style="color: var(--text-muted);">Action: IGNORED. Discards duplicate ID submissions.</div>
+          </div>
+
+          <div class="industrial-card p-4 space-y-2 border-l-4 border-l-blue-600">
+            <span class="text-xs font-bold text-blue-600">Rule 2: SHA256 Payload Hash (30s Window)</span>
+            <div class="text-2xl font-bold" id="dupRule2Count" style="color: var(--text-heading);">0</div>
+            <div class="text-[11px] font-sans" style="color: var(--text-muted);">Action: IGNORED. SHA256(OrderID + Amount + User + Type) within 30s.</div>
+          </div>
+
+          <div class="industrial-card p-4 space-y-2 border-l-4 border-l-amber-500">
+            <span class="text-xs font-bold text-amber-500">Rule 3: Completed Retry Quarantined</span>
+            <div class="text-2xl font-bold" id="dupRule3Count" style="color: var(--text-heading);">0</div>
+            <div class="text-[11px] font-sans" style="color: var(--text-muted);">Action: DROPPED. Retries for already completed transactions.</div>
+          </div>
+        </div>
+
+        <div class="industrial-card p-4 space-y-2">
+          <div class="flex justify-between items-center">
+            <span class="text-xs font-bold uppercase" style="color: var(--text-heading);">Quarantined Duplicate Event Log</span>
+            <button onclick="clearDuplicates()" class="px-2.5 py-1 bg-violet-600 hover:bg-violet-700 text-white rounded text-[11px] font-bold">
+              Purge Quarantined Duplicates
+            </button>
+          </div>
+          <div class="overflow-x-auto max-h-60 overflow-y-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="sticky top-0 border-b text-[10px] uppercase font-bold" style="background-color: var(--bg-surface); border-color: var(--border-color); color: var(--text-muted);">
+                <tr>
+                  <th class="py-2 px-3">Time</th>
+                  <th class="py-2 px-3">Duplicate ID</th>
+                  <th class="py-2 px-3">Original ID</th>
+                  <th class="py-2 px-3">Event Type</th>
+                  <th class="py-2 px-3">Reason</th>
+                  <th class="py-2 px-3">Action</th>
+                </tr>
+              </thead>
+              <tbody id="dupLogsTableBody" class="divide-y" style="border-color: var(--border-color);">
+                <tr><td colspan="6" class="py-4 text-center" style="color: var(--text-muted);">No duplicate events recorded yet.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================================================= -->
+      <!-- VIEW 6: COST OPTIMIZATION (Feature 3 - Cost Units)      -->
+      <!-- ======================================================= -->
+      <section id="view-costs" class="view-panel space-y-4 font-mono text-xs">
+        <div>
+          <h2 class="text-base font-bold flex items-center gap-2" style="color: var(--text-heading);">
+            <i data-lucide="coins" class="w-5 h-5 text-teal-500"></i>
+            Feature 3: Infrastructure Cost Estimation (Normalized Cost Units)
+          </h2>
+          <p class="text-xs font-sans" style="color: var(--text-muted);">Relative cost model comparing a Naïve Pipeline against the Adaptive Pipeline in standardized Cost Units.</p>
+        </div>
+
+        <!-- Relative Cost Unit Rates Banner -->
+        <div class="industrial-card p-3.5 border-l-4 border-l-teal-600">
+          <div class="font-bold text-xs mb-2" style="color: var(--text-heading);">Defined Cost Unit Rates (Normalized Model):</div>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+            <div class="p-2 rounded industrial-inner">
+              <span class="text-[10px]" style="color: var(--text-muted);">Worker Operation:</span>
+              <div class="font-bold text-blue-600">1 Operation = 1.0 Cost Unit</div>
+            </div>
+            <div class="p-2 rounded industrial-inner">
+              <span class="text-[10px]" style="color: var(--text-muted);">CPU Second:</span>
+              <div class="font-bold text-purple-600">1 CPU Sec = 0.5 Cost Unit</div>
+            </div>
+            <div class="p-2 rounded industrial-inner">
+              <span class="text-[10px]" style="color: var(--text-muted);">Memory MB:</span>
+              <div class="font-bold text-amber-500">1 MB Buffer = 0.02 Cost Unit</div>
+            </div>
+            <div class="p-2 rounded industrial-inner">
+              <span class="text-[10px]" style="color: var(--text-muted);">Network Ingress:</span>
+              <div class="font-bold text-emerald-600">1 Event = 0.001 Cost Unit</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pipeline Comparison Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- Naive Pipeline Card -->
+          <div class="industrial-card p-4 space-y-2 border-l-4 border-l-rose-500">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-bold text-rose-500">Naïve Pipeline Cost</span>
+              <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-rose-50 dark:bg-rose-950 text-rose-600">MODE 1</span>
+            </div>
+            <div class="text-2xl font-bold text-rose-600" id="costDetNaive">0.0 Units</div>
+            <div class="text-[11px] font-sans space-y-0.5" style="color: var(--text-muted);">
+              <div>CPU Load: <strong id="costNaiveCpu" class="text-rose-600">92%</strong> | Static Workers: <strong id="costNaiveWorkers">10</strong></div>
+              <div>Strategy: Unmanaged individual dispatch, no batching, zero duplicate filtering.</div>
+            </div>
+          </div>
+
+          <!-- Adaptive Pipeline Card -->
+          <div class="industrial-card p-4 space-y-2 border-l-4 border-l-emerald-600">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-bold text-emerald-600">Adaptive Pipeline Cost</span>
+              <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950 text-emerald-600">MODE 2</span>
+            </div>
+            <div class="text-2xl font-bold text-emerald-600" id="costDetAdaptive">0.0 Units</div>
+            <div class="text-[11px] font-sans space-y-0.5" style="color: var(--text-muted);">
+              <div>CPU Load: <strong id="costAdaptiveCpu" class="text-emerald-600">65%</strong> | Dynamic Workers: <strong id="costAdaptiveWorkers">4</strong></div>
+              <div>Strategy: Dynamic batching + pre-queue duplicate shield + intelligent deferral.</div>
+            </div>
+          </div>
+
+          <!-- Savings Card -->
+          <div class="industrial-card p-4 space-y-2 border-l-4 border-l-teal-600">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-bold text-teal-600">Cost Savings</span>
+              <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-teal-50 dark:bg-teal-950 text-teal-600">SAVINGS</span>
+            </div>
+            <div class="text-2xl font-bold text-teal-600" id="costDetSavings">0.0 Units Saved</div>
+            <div class="text-sm font-bold text-emerald-600" id="costDetSavingsPct">36.0% Savings</div>
+            <p class="text-[11px] font-sans" style="color: var(--text-muted);">Saved = Naïve Cost - Adaptive Cost</p>
+          </div>
+        </div>
+
+        <!-- Cost Component Breakdown -->
+        <div class="industrial-card p-4 space-y-2">
+          <div class="font-bold text-sm" style="color: var(--text-heading);">Adaptive Cost Component Breakdown (Cost Units):</div>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+            <div class="p-2.5 rounded industrial-inner">
+              <span class="text-[10px]" style="color: var(--text-muted);">Worker Cost (1 Unit/Op):</span>
+              <div class="font-bold text-blue-600" id="costBrWorker">0.0 Units</div>
+            </div>
+            <div class="p-2.5 rounded industrial-inner">
+              <span class="text-[10px]" style="color: var(--text-muted);">CPU Cost (0.5 Unit/Sec):</span>
+              <div class="font-bold text-purple-600" id="costBrCpu">0.0 Units</div>
+            </div>
+            <div class="p-2.5 rounded industrial-inner">
+              <span class="text-[10px]" style="color: var(--text-muted);">Memory Cost (0.02 Unit/MB):</span>
+              <div class="font-bold text-amber-500" id="costBrMem">0.0 Units</div>
+            </div>
+            <div class="p-2.5 rounded industrial-inner">
+              <span class="text-[10px]" style="color: var(--text-muted);">Network Cost (0.001 Unit/Event):</span>
+              <div class="font-bold text-emerald-600" id="costBrNet">0.0 Units</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================================================= -->
+      <!-- VIEW 7: TRAFFIC SPIKES & SLIDERS (Requirement 2 & 12)   -->
+      <!-- ======================================================= -->
+      <section id="view-simulator" class="view-panel space-y-4 font-mono text-xs">
+        <div>
+          <h2 class="text-base font-bold flex items-center gap-2" style="color: var(--text-heading);">
+            <i data-lucide="sliders" class="w-5 h-5 text-rose-500"></i>
+            User-Controlled Traffic Generator & Flash Spike Sliders
+          </h2>
+          <p class="text-xs font-sans" style="color: var(--text-muted);">Configure dynamic base load, spike multipliers, durations, patterns, and fault injections live.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          
+          <!-- Slider Panel 1: Load & Spikes -->
+          <div class="industrial-card p-5 space-y-4">
+            <div class="font-bold text-sm" style="color: var(--text-heading);">Traffic Rate & Spikes</div>
+
+            <!-- Base Events/sec Slider -->
+            <div class="space-y-1">
+              <div class="flex justify-between font-bold">
+                <span>Base Events / Sec:</span>
+                <span id="sliderBaseEpsVal" class="text-blue-600">1,000 EPS</span>
+              </div>
+              <input type="range" id="sliderBaseEps" min="100" max="10000" step="100" value="1000"
+                oninput="onSliderChange()" class="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg cursor-pointer">
+              <div class="flex justify-between text-[9px]" style="color: var(--text-muted);">
+                <span>100</span><span>1,000</span><span>5,000</span><span>10,000 EPS</span>
+              </div>
+            </div>
+
+            <!-- Spike Multiplier Slider -->
+            <div class="space-y-1">
+              <div class="flex justify-between font-bold">
+                <span>Spike Multiplier:</span>
+                <span id="sliderSpikeMultVal" class="text-amber-500">10×</span>
+              </div>
+              <input type="range" id="sliderSpikeMult" min="1" max="50" step="1" value="10"
+                oninput="onSliderChange()" class="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg cursor-pointer">
+              <div class="flex justify-between text-[9px]" style="color: var(--text-muted);">
+                <span>1×</span><span>10×</span><span>25×</span><span>50×</span>
+              </div>
+            </div>
+
+            <!-- Spike Duration Slider -->
+            <div class="space-y-1">
+              <div class="flex justify-between font-bold">
+                <span>Spike Duration:</span>
+                <span id="sliderDurationVal" class="text-indigo-600">20 sec</span>
+              </div>
+              <input type="range" id="sliderDuration" min="5" max="60" step="5" value="20"
+                oninput="onSliderChange()" class="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg cursor-pointer">
+              <div class="flex justify-between text-[9px]" style="color: var(--text-muted);">
+                <span>5s</span><span>20s</span><span>40s</span><span>60s</span>
+              </div>
+            </div>
+
+            <!-- Traffic Pattern Selector -->
+            <div class="space-y-1">
+              <label class="block font-bold">Traffic Pattern:</label>
+              <select id="sliderPatternSelect" onchange="onSliderChange()" class="w-full p-2 border rounded"
+                style="background-color: var(--bg-surface); border-color: var(--border-color); color: var(--text-heading);">
+                <option value="SUDDEN_SPIKE">Sudden Spike</option>
+                <option value="GRADUAL_RAMP">Gradual Ramp</option>
+                <option value="WAVE">Wave Oscillation</option>
+                <option value="RANDOM_BURST">Random Burst</option>
+                <option value="CONTINUOUS_HIGH_LOAD">Continuous High Load</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Slider Panel 2: Injections & Simulation Settings -->
+          <div class="industrial-card p-5 space-y-4">
+            <div class="font-bold text-sm" style="color: var(--text-heading);">Injections & Reliability</div>
+
+            <!-- Duplicate Probability Slider -->
+            <div class="space-y-1">
+              <div class="flex justify-between font-bold">
+                <span>Duplicate Injection Rate:</span>
+                <span id="sliderDupProbVal" class="text-violet-600">5%</span>
+              </div>
+              <input type="range" id="sliderDupProb" min="0" max="50" step="5" value="5"
+                oninput="onSliderChange()" class="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg cursor-pointer">
+              <div class="flex justify-between text-[9px]" style="color: var(--text-muted);">
+                <span>0%</span><span>10%</span><span>25%</span><span>50%</span>
+              </div>
+            </div>
+
+            <!-- Simulated Failure Probability Slider -->
+            <div class="space-y-1">
+              <div class="flex justify-between font-bold">
+                <span>Simulated Worker Failure Rate:</span>
+                <span id="sliderFailProbVal" class="text-rose-600">2%</span>
+              </div>
+              <input type="range" id="sliderFailProb" min="0" max="15" step="1" value="2"
+                oninput="onSliderChange()" class="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg cursor-pointer">
+              <div class="flex justify-between text-[9px]" style="color: var(--text-muted);">
+                <span>0% (None)</span><span>5%</span><span>10%</span><span>15%</span>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="pt-4 flex gap-2">
+              <button onclick="applySimulationConfig()" class="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded flex items-center justify-center gap-1.5 shadow-sm">
+                <i data-lucide="check" class="w-4 h-4"></i> Apply & Run
+              </button>
+              <button onclick="stopSim()" class="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded flex items-center justify-center gap-1.5">
+                <i data-lucide="square" class="w-4 h-4"></i> Stop
+              </button>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ======================================================= -->
+      <!-- VIEW 8: DECISION AUDIT LOGS                             -->
+      <!-- ======================================================= -->
+      <section id="view-logs" class="view-panel space-y-4 font-mono text-xs">
+        <div>
+          <h2 class="text-base font-bold flex items-center gap-2" style="color: var(--text-heading);">
+            <i data-lucide="file-text" class="w-5 h-5 text-cyan-600"></i>
+            Historical Decision Logs Audit
+          </h2>
+          <p class="text-xs font-sans" style="color: var(--text-muted);">Comprehensive audit record of all adaptive routing decisions, aging boosts, and load shedding actions.</p>
+        </div>
+
+        <div class="industrial-card p-4">
+          <div class="overflow-x-auto max-h-96 overflow-y-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="sticky top-0 border-b text-[10px] uppercase font-bold" style="background-color: var(--bg-surface); border-color: var(--border-color); color: var(--text-muted);">
+                <tr>
+                  <th class="py-2.5 px-3">Time</th>
+                  <th class="py-2.5 px-3">Event ID</th>
+                  <th class="py-2.5 px-3">Type</th>
+                  <th class="py-2.5 px-3">Priority</th>
+                  <th class="py-2.5 px-3">Pressure</th>
+                  <th class="py-2.5 px-3">Decision</th>
+                  <th class="py-2.5 px-3">Reason / Details</th>
+                  <th class="py-2.5 px-3 text-right">Latency</th>
+                </tr>
+              </thead>
+              <tbody id="logsFullTableBody" class="divide-y" style="border-color: var(--border-color);">
+                <tr><td colspan="8" class="py-8 text-center" style="color: var(--text-muted);">Waiting for simulation events...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </main>
 
   </div>
 
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- 4. JAVASCRIPT CONTROLLER                                    -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
   <script>
-    /* ═══════════════════════════════════════════════════════════ */
-    /*  CONSTANTS & STATE                                         */
-    /* ═══════════════════════════════════════════════════════════ */
-    const API = 'http://localhost:8000';
-    const WS_URL = 'ws://localhost:8000/ws/metrics';
+    const BACKEND_PORT = 8000;
+    const HOST = window.location.hostname || 'localhost';
+    const API = `http://${HOST}:${BACKEND_PORT}`;
+    const WS_URL = `ws://${HOST}:${BACKEND_PORT}/ws/metrics`;
+
     let ws = null;
-    let reconnectTimer = null;
     let isRunning = false;
-    let lastData = null;
-    const COLORS = {
-      green: '#10b981', blue: '#3b82f6', yellow: '#f59e0b',
-      orange: '#f97316', red: '#ef4444', cyan: '#06b6d4',
-      purple: '#a855f7', muted: '#64748b',
-    };
-    const PRESSURE_COLORS = { LOW: COLORS.green, MEDIUM: COLORS.yellow, HIGH: COLORS.orange, CRITICAL: COLORS.red };
-    const DECISION_COLORS = { PROCESS: COLORS.green, BATCH: COLORS.blue, DEFER: COLORS.yellow, DROP: COLORS.red };
+    let currentTheme = localStorage.getItem('aepp_theme') || 'light';
+    let currentRoute = 'dashboard';
+    let chartThroughput = null;
+    let chartDecisionPie = null;
 
-    /* ═══════════════════════════════════════════════════════════ */
-    /*  WEBSOCKET                                                 */
-    /* ═══════════════════════════════════════════════════════════ */
-    function connectWS() {
-      if (ws && ws.readyState <= 1) return;
-      ws = new WebSocket(WS_URL);
-      ws.onopen = () => {
-        document.getElementById('wsBadge').className = 'ws-badge connected';
-        document.getElementById('wsBadge').textContent = 'CONNECTED';
-        if (reconnectTimer) { clearInterval(reconnectTimer); reconnectTimer = null; }
-      };
-      ws.onmessage = (e) => {
-        try {
-          const msg = JSON.parse(e.data);
-          if (msg.event === 'METRICS_UPDATE' && msg.data) {
-            lastData = msg.data;
-            updateDashboard(msg.data);
-          }
-        } catch { }
-      };
-      ws.onclose = () => {
-        document.getElementById('wsBadge').className = 'ws-badge disconnected';
-        document.getElementById('wsBadge').textContent = 'RECONNECTING…';
-        if (!reconnectTimer) reconnectTimer = setInterval(connectWS, 3000);
-      };
-      ws.onerror = () => ws.close();
+    /* ──────────────── Theme Management ──────────────── */
+    function applyTheme(theme) {
+      currentTheme = theme;
+      localStorage.setItem('aepp_theme', theme);
+      const root = document.documentElement;
+      const icon = document.getElementById('themeIcon');
+      const text = document.getElementById('themeText');
+
+      if (theme === 'dark') {
+        root.classList.remove('light');
+        root.classList.add('dark');
+        if (icon) icon.setAttribute('data-lucide', 'moon');
+        if (text) text.textContent = 'DARK';
+      } else {
+        root.classList.remove('dark');
+        root.classList.add('light');
+        if (icon) icon.setAttribute('data-lucide', 'sun');
+        if (text) text.textContent = 'WHITE';
+      }
+      lucide.createIcons();
+      updateChartsTheme();
     }
 
-    /* ═══════════════════════════════════════════════════════════ */
-    /*  API CALLS                                                 */
-    /* ═══════════════════════════════════════════════════════════ */
-    async function loadScenarios() {
-      try {
-        const res = await fetch(API + '/api/scenarios');
-        const data = await res.json();
-        const sel = document.getElementById('ctrlScenario');
-        sel.innerHTML = '';
-        for (const [key, info] of Object.entries(data)) {
-          const opt = document.createElement('option');
-          opt.value = key;
-          opt.textContent = info.label || key;
-          sel.appendChild(opt);
+    function toggleTheme() {
+      applyTheme(currentTheme === 'light' ? 'dark' : 'light');
+    }
+
+    function getThemeColors() {
+      const isDark = currentTheme === 'dark';
+      return {
+        grid: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(226,232,240,0.8)',
+        text: isDark ? '#94a3b8' : '#64748b'
+      };
+    }
+
+    function updateChartsTheme() {
+      const tc = getThemeColors();
+      if (chartThroughput) {
+        chartThroughput.options.scales.x.grid.color = tc.grid;
+        chartThroughput.options.scales.x.ticks.color = tc.text;
+        chartThroughput.options.scales.y.grid.color = tc.grid;
+        chartThroughput.options.scales.y.ticks.color = tc.text;
+        chartThroughput.update();
+      }
+    }
+
+    /* ──────────────── Router & Navigation ──────────────── */
+    function navigate(route) {
+      currentRoute = route;
+      window.location.hash = `#/${route}`;
+
+      document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
+      const target = document.getElementById(`view-${route}`);
+      if (target) target.classList.add('active');
+
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        if (btn.dataset.page === route) {
+          btn.style.backgroundColor = 'var(--nav-active-bg)';
+          btn.style.color = 'var(--nav-active-text)';
+          btn.style.borderLeft = '3px solid var(--nav-active-border)';
+        } else {
+          btn.style.backgroundColor = '';
+          btn.style.color = 'var(--text-body)';
+          btn.style.borderLeft = '3px solid transparent';
         }
-        sel.value = 'BIG_BILLION_DAY';
-        onScenarioChange();
-      } catch { console.warn('Could not load scenarios'); }
+      });
+
+      const breadcrumb = document.getElementById('breadcrumbText');
+      if (breadcrumb) {
+        const titles = {
+          dashboard: 'Dashboard Overview',
+          queues: 'Queue Health & Multi-Tier Topology',
+          workers: 'Worker Fleet Scaling',
+          decisions: 'EDF Decision Engine',
+          duplicates: 'Duplicate Event Shield',
+          costs: 'Cost Optimization (₹)',
+          simulator: 'Traffic Spikes & Sliders',
+          logs: 'Decision Audit Logs'
+        };
+        breadcrumb.textContent = titles[route] || route;
+      }
     }
 
-    async function onScenarioChange() {
-      const name = document.getElementById('ctrlScenario').value;
-      try {
-        const res = await fetch(API + '/api/scenario/' + name);
-        const p = await res.json();
-        if (p.baseEps) document.getElementById('ctrlBaseEps').value = p.baseEps;
-        if (p.spikeMultiplier) document.getElementById('ctrlSpike').value = p.spikeMultiplier;
-        if (p.spikeStartSec !== undefined) document.getElementById('ctrlSpikeStart').value = p.spikeStartSec;
-        if (p.spikeDurationSec) document.getElementById('ctrlDuration').value = p.spikeDurationSec;
-        if (p.pattern) document.getElementById('ctrlPattern').value = p.pattern;
-      } catch { }
+    function initRouter() {
+      const hash = window.location.hash.replace('#/', '');
+      navigate(hash || 'dashboard');
+      window.addEventListener('hashchange', () => {
+        const h = window.location.hash.replace('#/', '');
+        if (h && h !== currentRoute) navigate(h);
+      });
     }
-    document.getElementById('ctrlScenario').addEventListener('change', onScenarioChange);
+
+    /* ──────────────── Helpers ──────────────── */
+    function setVal(id, text) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = text;
+    }
+
+    function fmt(n) {
+      return n != null ? Number(n).toLocaleString() : '0';
+    }
+
+    /* ──────────────── WebSocket Stream ──────────────── */
+    function connectWS() {
+      if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
+      try {
+        ws = new WebSocket(WS_URL);
+        ws.onopen = () => {
+          setVal('connStatusText', 'ONLINE');
+          const dot = document.getElementById('hostDot');
+          if (dot) dot.className = 'w-2 h-2 rounded-full bg-emerald-500 animate-pulse';
+        };
+        ws.onmessage = (e) => {
+          try {
+            const msg = JSON.parse(e.data);
+            if (msg.event === 'METRICS_UPDATE' && msg.data) {
+              updateDashboard(msg.data);
+            }
+          } catch (err) { }
+        };
+        ws.onclose = () => {
+          setVal('connStatusText', 'OFFLINE');
+          const dot = document.getElementById('hostDot');
+          if (dot) dot.className = 'w-2 h-2 rounded-full bg-rose-500';
+          setTimeout(connectWS, 2000);
+        };
+        ws.onerror = () => ws.close();
+      } catch (err) {
+        setTimeout(connectWS, 2000);
+      }
+    }
+
+    /* ──────────────── Live Dashboard Updates ──────────────── */
+    function updateDashboard(d) {
+      // 1. Sync Buttons
+      const btnRun = document.getElementById('btnRun');
+      const btnStop = document.getElementById('btnStop');
+      if (d.running) {
+        isRunning = true;
+        if (btnRun) { btnRun.disabled = true; btnRun.classList.add('opacity-50', 'cursor-not-allowed'); }
+        if (btnStop) { btnStop.disabled = false; btnStop.classList.remove('opacity-50', 'cursor-not-allowed'); }
+      } else {
+        isRunning = false;
+        if (btnRun) { btnRun.disabled = false; btnRun.classList.remove('opacity-50', 'cursor-not-allowed'); }
+        if (btnStop) { btnStop.disabled = true; btnStop.classList.add('opacity-50', 'cursor-not-allowed'); }
+      }
+
+      // 2. Metrics Strip
+      setVal('kpiActualEps', fmt(d.actualEps));
+      setVal('kpiTargetEps', fmt(d.currentEps));
+      setVal('kpiTotalProcessed', fmt(d.totalProcessed));
+
+      const lat = d.avgLatencyMs || 0;
+      setVal('kpiLatency', lat.toFixed(1));
+      setVal('kpiPeakLatency', (d.peakLatency || lat).toFixed(1) + ' ms');
+
+      // Feature 1: Adaptive Batching
+      const ab = d.adaptiveBatching || {};
+      setVal('kpiAdaptiveBatchSize', fmt(ab.currentBatchSize || d.adaptiveBatchSize || 10));
+      setVal('kpiBatchQueueSize', fmt(ab.batchQueue || (d.queues ? d.queues.batch : 0)));
+      setVal('kpiBatchedTotal', fmt(ab.eventsBatched || d.totalBatched || 0));
+      setVal('kpiBatchCallsSaved', fmt(ab.workerCallsSaved || 0));
+      setVal('kpiBatchEfficiency', (ab.batchEfficiency || 0).toFixed(1) + '%');
+
+      // Adaptive Batching Panel
+      setVal('batchEngineCurrentSize', fmt(ab.currentBatchSize || d.adaptiveBatchSize || 10));
+      setVal('batchEngineQueue', `${fmt(ab.batchQueue || (d.queues ? d.queues.batch : 0))} Events`);
+      setVal('batchEngineBatched', fmt(ab.eventsBatched || d.totalBatched || 0));
+      setVal('batchEngineCallsSaved', fmt(ab.workerCallsSaved || 0));
+      setVal('batchEngineEfficiency', (ab.batchEfficiency || 0).toFixed(1) + '%');
+
+      // Worker Scaling
+      const wsInfo = d.workerScaling || {};
+      setVal('kpiTotalWorkers', fmt(wsInfo.totalWorkers || 4));
+      setVal('kpiScalingMode', wsInfo.scalingLevel || 'NORMAL');
+      setVal('navWorkerScaleBadge', `${wsInfo.totalWorkers || 4} W`);
+      const emergPill = document.getElementById('kpiEmergencyPill');
+      if (emergPill) {
+        emergPill.textContent = wsInfo.emergencyMode ? 'EMERGENCY' : (wsInfo.scalingLevel || 'NOMINAL');
+        emergPill.className = wsInfo.emergencyMode ? 'text-[9px] font-mono px-1 rounded bg-rose-100 dark:bg-rose-950 text-rose-600 font-bold' : 'text-[9px] font-mono px-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-500';
+      }
+
+      // Feature 2: Duplicate Event Reduction
+      const dd = d.duplicateDetection || {};
+      const dupCount = dd.duplicateEvents || dd.totalDuplicates || 0;
+      setVal('kpiDuplicatesDetected', fmt(dupCount));
+      setVal('kpiDuplicatePct', (dd.duplicatePct || 0).toFixed(1) + '%');
+      setVal('kpiProcessingSaved', fmt(dd.processingSaved || dupCount));
+      setVal('kpiCpuSaved', (dd.cpuSaved || dd.cpuSavedPct || 0).toFixed(1) + '%');
+      setVal('kpiMemSaved', (dd.memorySaved || 0).toFixed(1) + '%');
+      setVal('navDupCount', fmt(dupCount));
+
+      setVal('dupDetCount', fmt(dupCount));
+      setVal('dupDetPct', (dd.duplicatePct || 0).toFixed(1) + '%');
+      setVal('dupDetProcSaved', fmt(dd.processingSaved || dupCount));
+      setVal('dupDetCpuSaved', (dd.cpuSaved || dd.cpuSavedPct || 0).toFixed(1) + '%');
+      setVal('dupDetMemSaved', (dd.memorySaved || 0).toFixed(1) + '%');
+
+      // Feature 3: Cost Estimation (Normalized Cost Units)
+      const ce = d.costEstimation || {};
+      setVal('kpiSavingsTotal', fmt(Math.round(ce.savings || ce.savingsTotal || 0)));
+      setVal('kpiSavingsPct', (ce.savingsPct || 0).toFixed(1) + '%');
+      setVal('kpiCostNaive', fmt(Math.round(ce.naiveCost || ce.naiveCostTotal || 0)));
+      setVal('kpiCostAdaptive', fmt(Math.round(ce.adaptiveCost || ce.adaptiveCostTotal || 0)));
+      setVal('navCostPct', (ce.savingsPct || 0).toFixed(0) + '%');
+
+      // Top Status Pill
+      const pScore = d.pressureScore || 0;
+      const topBadge = document.getElementById('topPressureBadge');
+      const topLabel = document.getElementById('topPressureLabel');
+      if (topBadge && topLabel) {
+        topLabel.textContent = `PRESSURE: ${d.pressureLevel || 'LOW'} (${pScore.toFixed(2)})`;
+        if (d.pressureLevel === 'CRITICAL') {
+          topBadge.className = 'status-badge bg-rose-100 text-rose-700 border-rose-300 dark:bg-rose-950 dark:text-rose-400 dark:border-rose-800';
+        } else if (d.pressureLevel === 'HIGH') {
+          topBadge.className = 'status-badge bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-950 dark:text-orange-400 dark:border-orange-800';
+        } else if (d.pressureLevel === 'MEDIUM') {
+          topBadge.className = 'status-badge bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800';
+        } else {
+          topBadge.className = 'status-badge bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800';
+        }
+      }
+
+      // Pressure Radial Arc Gauge & Subcomponents
+      updatePressureGauge(pScore, (d.queues ? d.queues.total : 0), lat);
+
+      // 3. 6-Tier Queues Backlog (Requirement 1 & 10)
+      const q = d.queues || {};
+      setVal('navQueueCount', fmt(q.total || 0));
+      setVal('kpiAgingEscalations', fmt(d.priorityEscalations || 0));
+
+      setVal('qCritText', `${fmt(q.critical || 0)} / 5,000`);
+      setVal('qBatchText', `${fmt(q.batch || 0)} / 5,000`);
+      setVal('qDefText', `${fmt(q.deferred || 0)} / 5,000`);
+      setVal('qRetryText', `${fmt(q.retry || 0)} items`);
+      setVal('qDupText', `${fmt(q.duplicate || 0)} quarantined`);
+      setVal('qDlqText', `${fmt(q.dlq || 0)} items`);
+
+      const setBar = (id, val, cap) => {
+        const el = document.getElementById(id);
+        if (el) el.style.width = Math.min(100, (val / cap) * 100) + '%';
+      };
+      setBar('qCritBar', q.critical || 0, 5000);
+      setBar('qBatchBar', q.batch || 0, 5000);
+      setBar('qDefBar', q.deferred || 0, 5000);
+      setBar('qRetryBar', q.retry || 0, 500);
+      setBar('qDupBar', q.duplicate || 0, 500);
+      setBar('qDlqBar', q.dlq || 0, 500);
+
+      // Queue details page
+      setVal('qDetCritVal', fmt(q.critical || 0));
+      setVal('qDetBatchVal', fmt(q.batch || 0));
+      setVal('qDetDefVal', fmt(q.deferred || 0));
+      setVal('qDetRetryVal', fmt(q.retry || 0));
+      setVal('qDetDlqVal', fmt(q.dlq || 0) + ' items');
+      setVal('qDetGrowthRate', `${(d.queueGrowthRate || 0).toFixed(1)} items/s`);
+      setVal('qDetAgingTotal', `${fmt(d.priorityEscalations || 0)} escalations`);
+
+      // 4. Decision Distribution
+      const dp = d.decisionPct || {};
+      setVal('pctProcess', (dp.PROCESS || 0).toFixed(1) + '%');
+      setVal('pctBatch', (dp.BATCH || 0).toFixed(1) + '%');
+      setVal('pctDefer', (dp.DEFER || 0).toFixed(1) + '%');
+      setVal('pctRetry', (dp.RETRY || 0).toFixed(1) + '%');
+      setVal('pctDrop', (dp.DROP || 0).toFixed(1) + '%');
+
+      updateDecisionPieChart(dp);
+
+      // 5. Worker Fleet Detailed Matrix
+      const wu = d.workerUtilization || {};
+      setVal('wCritUtil', (wu.critical || 0).toFixed(1) + '%');
+      setVal('wBatchUtil', (wu.batch || 0).toFixed(1) + '%');
+      setVal('wDefUtil', (wu.deferred || 0).toFixed(1) + '%');
+      setVal('wRetryUtil', (wu.retry || 0).toFixed(1) + '%');
+
+      setBar('wCritBar', wu.critical || 0, 100);
+      setBar('wBatchBar', wu.batch || 0, 100);
+      setBar('wDefBar', wu.deferred || 0, 100);
+      setBar('wRetryBar', wu.retry || 0, 100);
+
+      const ac = wsInfo.activeCounts || {};
+      setVal('wCritActiveCount', `${ac.critical || 2} THREADS`);
+      setVal('wBatchActiveCount', `${ac.batch || 1} THREAD`);
+      setVal('wDefActiveCount', `${ac.deferred || 1} THREAD`);
+      setVal('wRetryActiveCount', `${ac.retry || 1} THREAD`);
+
+      const cevents = wsInfo.currentEvent || {};
+      setVal('wCritCurEvt', cevents.critical || 'IDLE');
+      setVal('wBatchCurEvt', cevents.batch || 'IDLE');
+      setVal('wDefCurEvt', cevents.deferred || 'IDLE');
+      setVal('wRetryCurEvt', cevents.retry || 'IDLE');
+
+      // 6. Duplicate Breakdown
+      const dbr = dd.breakdownByReason || {};
+      setVal('dupRule1Count', fmt(dbr.SAME_EVENT_ID || 0));
+      setVal('dupRule2Count', fmt(dbr.PAYLOAD_HASH_AND_SOURCE_WINDOW || 0));
+      setVal('dupRule3Count', fmt(dbr.RETRY_COMPLETED_EVENT || 0));
+
+      if (dd.logs) {
+        renderDuplicateLogs(dd.logs);
+      }
+
+      // 7. Cost Detailed Breakdown (Feature 3 - Cost Units)
+      setVal('costDetNaive', `${fmt(Math.round(ce.naiveCost || ce.naiveCostTotal || 0))} Units`);
+      setVal('costDetAdaptive', `${fmt(Math.round(ce.adaptiveCost || ce.adaptiveCostTotal || 0))} Units`);
+      setVal('costDetSavings', `${fmt(Math.round(ce.savings || ce.savingsTotal || 0))} Units Saved`);
+      setVal('costDetSavingsPct', `${(ce.savingsPct || 0).toFixed(1)}% Savings`);
+      setVal('costNaiveCpu', `${(ce.naiveCpuPct || 92).toFixed(0)}%`);
+      setVal('costNaiveWorkers', ce.naiveWorkers || 10);
+      setVal('costAdaptiveCpu', `${(ce.adaptiveCpuPct || 65).toFixed(0)}%`);
+      setVal('costAdaptiveWorkers', ce.adaptiveWorkers || (wsInfo.totalWorkers || 4));
+
+      const cbr = ce.breakdown || {};
+      setVal('costBrWorker', `${(cbr.workerCost || 0).toFixed(1)} Units`);
+      setVal('costBrCpu', `${(cbr.cpuCost || 0).toFixed(1)} Units`);
+      setVal('costBrMem', `${(cbr.memoryCost || 0).toFixed(1)} Units`);
+      setVal('costBrNet', `${(cbr.networkCost || 0).toFixed(1)} Units`);
+
+      // 8. Throughput Line Chart
+      if (d.timeSeries) {
+        updateThroughputChart(d.timeSeries);
+      }
+
+      // 9. Recent Decision Audit Trail (EDF and Multi-Factor Scores)
+      if (d.recentDecisions) {
+        updateDecisionTable(d.recentDecisions);
+      }
+    }
+
+    /* ──────────────── Pressure Gauge ──────────────── */
+    function updatePressureGauge(score, totalQ, lat) {
+      const s = Math.min(1, Math.max(0, score));
+      const pct = Math.round(s * 100);
+      setVal('gaugePressurePct', pct + '%');
+      setVal('gaugePressureVal', `${s.toFixed(2)} / 1.00`);
+
+      const arc = document.getElementById('gaugePressureArc');
+      if (arc) {
+        const circumference = 314.15;
+        arc.style.strokeDashoffset = circumference * (1 - s);
+        if (s >= 0.95) arc.setAttribute('stroke', '#dc2626');
+        else if (s >= 0.75) arc.setAttribute('stroke', '#ef4444');
+        else if (s >= 0.40) arc.setAttribute('stroke', '#f59e0b');
+        else arc.setAttribute('stroke', '#2563eb');
+      }
+
+      const qScore = Math.min(1, totalQ / 5000);
+      const lScore = Math.min(1, lat / 200);
+
+      setVal('subPressureQ', (qScore * 0.40).toFixed(2));
+      setVal('subPressureW', (s * 0.35).toFixed(2));
+      setVal('subPressureL', (lScore * 0.25).toFixed(2));
+    }
+
+    /* ──────────────── Throughput Chart ──────────────── */
+    function updateThroughputChart(ts) {
+      const ctx = document.getElementById('chartThroughput');
+      if (!ctx) return;
+      const tc = getThemeColors();
+      const labels = (ts.timestamps || []).slice(-30).map(t => Math.round(t) + 's');
+      const dataThroughput = (ts.throughput || []).slice(-30);
+      const dataIngress = dataThroughput.map(v => Math.round(v * 1.05));
+
+      if (!chartThroughput) {
+        chartThroughput = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: 'Ingress Target',
+                data: dataIngress,
+                borderColor: '#2563eb',
+                backgroundColor: 'rgba(37, 99, 235, 0.08)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.3,
+                pointRadius: 0
+              },
+              {
+                label: 'Processed EPS',
+                data: dataThroughput,
+                borderColor: '#10b981',
+                borderWidth: 2,
+                fill: false,
+                tension: 0.3,
+                pointRadius: 0
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { grid: { color: tc.grid }, ticks: { color: tc.text, font: { family: 'JetBrains Mono', size: 9 } } },
+              y: { grid: { color: tc.grid }, ticks: { color: tc.text, font: { family: 'JetBrains Mono', size: 9 } } }
+            }
+          }
+        });
+      } else {
+        chartThroughput.data.labels = labels;
+        chartThroughput.data.datasets[0].data = dataIngress;
+        chartThroughput.data.datasets[1].data = dataThroughput;
+        chartThroughput.update('none');
+      }
+    }
+
+    /* ──────────────── Decision Distribution Pie Chart ──────────────── */
+    function updateDecisionPieChart(dp) {
+      const ctx = document.getElementById('chartDecisionPie');
+      if (!ctx) return;
+
+      const dataVals = [
+        dp.PROCESS || 0,
+        dp.BATCH || 0,
+        dp.DEFER || 0,
+        dp.RETRY || 0,
+        dp.DROP || 0
+      ];
+
+      if (!chartDecisionPie) {
+        chartDecisionPie = new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: ['PROCESS', 'BATCH', 'DEFER', 'RETRY', 'DROP'],
+            datasets: [{
+              data: dataVals,
+              backgroundColor: ['#2563eb', '#6366f1', '#f59e0b', '#af52de', '#ef4444'],
+              borderWidth: 0
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            cutout: '70%'
+          }
+        });
+      } else {
+        chartDecisionPie.data.datasets[0].data = dataVals;
+        chartDecisionPie.update('none');
+      }
+    }
+
+    /* ──────────────── Decision Table (Requirement 8 & 9) ──────────────── */
+    function updateDecisionTable(decisions) {
+      const tbody = document.getElementById('decisionTableBody');
+      const tbodyFull = document.getElementById('logsFullTableBody');
+      if (!tbody && !tbodyFull) return;
+
+      const rows = decisions.slice(0, 15).map(item => {
+        let badgeColor = 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300';
+        if (item.decision === 'BATCH') badgeColor = 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300';
+        else if (item.decision === 'DEFER') badgeColor = 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300';
+        else if (item.decision === 'RETRY') badgeColor = 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300';
+        else if (item.decision === 'DROP') badgeColor = 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300';
+
+        const sc = item.scores || {};
+        const edfText = sc.edf != null ? `${sc.edf}%` : '--';
+        const priorityText = sc.priority != null ? sc.priority : (item.priority || '--');
+
+        return `
+          <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+            <td class="py-1.5 px-3" style="color: var(--text-muted);">${item.time || '--'}</td>
+            <td class="py-1.5 px-3 font-semibold text-blue-600">${item.eventId || 'EVT'}</td>
+            <td class="py-1.5 px-3 font-medium">${item.eventType || 'ORDER'}</td>
+            <td class="py-1.5 px-3 font-bold">${priorityText}</td>
+            <td class="py-1.5 px-3 font-bold text-indigo-600">${edfText}</td>
+            <td class="py-1.5 px-3 font-bold">${item.pressure || '0.00'}</td>
+            <td class="py-1.5 px-3">
+              <span class="px-1.5 py-0.5 rounded text-[9px] font-bold ${badgeColor}">${item.decision}</span>
+            </td>
+            <td class="py-1.5 px-3 truncate max-w-xs" style="color: var(--text-muted);">${item.reason || 'Optimal Dispatch'}</td>
+            <td class="py-1.5 px-3 text-right font-bold" style="color: var(--text-heading);">${item.latency || 0}ms</td>
+          </tr>
+        `;
+      }).join('');
+
+      if (tbody) tbody.innerHTML = rows || '<tr><td colspan="9" class="py-4 text-center">No active decisions</td></tr>';
+      if (tbodyFull) tbodyFull.innerHTML = rows || '<tr><td colspan="9" class="py-4 text-center">No active decisions</td></tr>';
+    }
+
+    /* ──────────────── Duplicate Logs Table ──────────────── */
+    function renderDuplicateLogs(logs) {
+      const tbody = document.getElementById('dupLogsTableBody');
+      if (!tbody) return;
+
+      const rows = logs.slice(0, 10).map(item => `
+        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+          <td class="py-1.5 px-3" style="color: var(--text-muted);">${item.timestamp}</td>
+          <td class="py-1.5 px-3 font-bold text-violet-600">${item.eventId}</td>
+          <td class="py-1.5 px-3 font-semibold">${item.originalId}</td>
+          <td class="py-1.5 px-3">${item.eventType}</td>
+          <td class="py-1.5 px-3 text-purple-600 font-bold">${item.reason}</td>
+          <td class="py-1.5 px-3">
+            <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-300">
+              ${item.action}
+            </span>
+          </td>
+        </tr>
+      `).join('');
+
+      tbody.innerHTML = rows || '<tr><td colspan="6" class="py-4 text-center">No duplicates quarantined</td></tr>';
+    }
+
+    /* ──────────────── User-Controlled Flash Spike Sliders (Requirement 2) ──────────────── */
+    let sliderDebounceTimer = null;
+
+    function onSliderChange() {
+      const baseEps = Number(document.getElementById('sliderBaseEps').value);
+      const spikeMult = Number(document.getElementById('sliderSpikeMult').value);
+      const duration = Number(document.getElementById('sliderDuration').value);
+      const dupProb = Number(document.getElementById('sliderDupProb').value) / 100;
+      const failProb = Number(document.getElementById('sliderFailProb').value) / 100;
+
+      setVal('sliderBaseEpsVal', `${fmt(baseEps)} EPS`);
+      setVal('sliderSpikeMultVal', `${spikeMult}×`);
+      setVal('sliderDurationVal', `${duration} sec`);
+      setVal('sliderDupProbVal', `${Math.round(dupProb * 100)}%`);
+      setVal('sliderFailProbVal', `${Math.round(failProb * 100)}%`);
+
+      if (isRunning) {
+        clearTimeout(sliderDebounceTimer);
+        sliderDebounceTimer = setTimeout(() => {
+          applySimulationConfig();
+        }, 150);
+      }
+    }
+
+    async function applySimulationConfig() {
+      const baseEps = Number(document.getElementById('sliderBaseEps').value);
+      const spikeMultiplier = Number(document.getElementById('sliderSpikeMult').value);
+      const duration = Number(document.getElementById('sliderDuration').value);
+      const pattern = document.getElementById('sliderPatternSelect').value;
+      const dupProb = Number(document.getElementById('sliderDupProb').value) / 100;
+      const failProb = Number(document.getElementById('sliderFailProb').value) / 100;
+
+      const payload = {
+        scenario: "CUSTOM",
+        baseEps: baseEps,
+        spikeMultiplier: spikeMultiplier,
+        spikeStartSec: 0.0,
+        spikeDurationSec: duration,
+        rampDownSec: 5.0,
+        pattern: pattern,
+        duplicateProbability: dupProb,
+        failureProbability: failProb,
+        queueCapacity: 5000
+      };
+
+      try {
+        const endpoint = isRunning ? `${API}/api/simulation/configure` : `${API}/api/simulation/start`;
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const d = await res.json();
+        console.log('Simulation updated:', d);
+        if (!isRunning && endpoint.endsWith('/start')) {
+          isRunning = true;
+          const btnRun = document.getElementById('btnRun');
+          const btnStop = document.getElementById('btnStop');
+          if (btnRun) { btnRun.disabled = true; btnRun.classList.add('opacity-50', 'cursor-not-allowed'); }
+          if (btnStop) { btnStop.disabled = false; btnStop.classList.remove('opacity-50', 'cursor-not-allowed'); }
+        }
+      } catch (e) {
+        console.error('Config error:', e);
+      }
+    }
 
     async function startSim() {
-      document.getElementById('summaryPanel').classList.add('hidden');
-      const body = {
-        scenario: document.getElementById('ctrlScenario').value,
-        baseEps: parseInt(document.getElementById('ctrlBaseEps').value),
-        spikeMultiplier: parseFloat(document.getElementById('ctrlSpike').value),
-        spikeStartSec: parseFloat(document.getElementById('ctrlSpikeStart').value),
-        spikeDurationSec: parseFloat(document.getElementById('ctrlDuration').value),
-        pattern: document.getElementById('ctrlPattern').value,
+      const baseEps = Number(document.getElementById('sliderBaseEps').value);
+      const spikeMultiplier = Number(document.getElementById('sliderSpikeMult').value);
+      const duration = Number(document.getElementById('sliderDuration').value);
+      const pattern = document.getElementById('sliderPatternSelect').value;
+      const dupProb = Number(document.getElementById('sliderDupProb').value) / 100;
+      const failProb = Number(document.getElementById('sliderFailProb').value) / 100;
+
+      const payload = {
+        scenario: "CUSTOM",
+        baseEps: baseEps,
+        spikeMultiplier: spikeMultiplier,
+        spikeStartSec: 1.0,
+        spikeDurationSec: duration,
+        rampDownSec: 5.0,
+        pattern: pattern,
+        duplicateProbability: dupProb,
+        failureProbability: failProb,
+        queueCapacity: 5000
       };
+
       try {
-        await fetch(API + '/api/simulation/start', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+        const res = await fetch(`${API}/api/simulation/start`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
         });
+        const d = await res.json();
+        console.log('Simulation started:', d);
         isRunning = true;
-        document.getElementById('btnStart').disabled = true;
-        document.getElementById('btnStop').disabled = false;
-      } catch (e) { alert('Failed to start: ' + e.message); }
+        const btnRun = document.getElementById('btnRun');
+        const btnStop = document.getElementById('btnStop');
+        if (btnRun) { btnRun.disabled = true; btnRun.classList.add('opacity-50', 'cursor-not-allowed'); }
+        if (btnStop) { btnStop.disabled = false; btnStop.classList.remove('opacity-50', 'cursor-not-allowed'); }
+      } catch (e) {
+        console.error('Start error:', e);
+      }
     }
 
     async function stopSim() {
       try {
-        const res = await fetch(API + '/api/simulation/stop', { method: 'POST' });
-        const data = await res.json();
+        const res = await fetch(`${API}/api/simulation/stop`, { method: 'POST' });
+        const d = await res.json();
+        console.log('Stopped:', d);
         isRunning = false;
-        document.getElementById('btnStart').disabled = false;
-        document.getElementById('btnStop').disabled = true;
-        if (data.summary) showSummary(data.summary);
-      } catch { }
-    }
-
-    function showSummary(s) {
-      const grid = document.getElementById('summaryGrid');
-      const items = [
-        { label: 'Events Generated', value: fmt(s.totalGenerated), cls: '' },
-        { label: 'Events Processed', value: fmt(s.totalProcessed), cls: 'green' },
-        { label: 'Batched', value: fmt(s.totalBatched), cls: 'blue' },
-        { label: 'Deferred', value: fmt(s.totalDeferred), cls: 'yellow' },
-        { label: 'Dropped', value: fmt(s.totalDropped), cls: 'red' },
-        { label: 'Critical Lost', value: s.criticalLost, cls: s.criticalLost > 0 ? 'red' : 'green' },
-        { label: 'Peak Latency', value: s.peakLatency + 'ms', cls: '' },
-        { label: 'Peak EPS', value: fmt(s.peakEps), cls: '' },
-      ];
-      grid.innerHTML = items.map(i =>
-        `<div class="summary-item"><div class="s-label">${i.label}</div><div class="s-value ${i.cls}">${i.value}</div></div>`
-      ).join('');
-      document.getElementById('summaryPanel').classList.remove('hidden');
-    }
-
-    /* ═══════════════════════════════════════════════════════════ */
-    /*  DASHBOARD UPDATE                                          */
-    /* ═══════════════════════════════════════════════════════════ */
-    function fmt(n) { return n != null ? n.toLocaleString() : '0'; }
-
-    function updateDashboard(d) {
-      // Running state
-      if (d.running && !isRunning) {
-        isRunning = true;
-        document.getElementById('btnStart').disabled = true;
-        document.getElementById('btnStop').disabled = false;
-      } else if (!d.running && isRunning) {
-        isRunning = false;
-        document.getElementById('btnStart').disabled = false;
-        document.getElementById('btnStop').disabled = true;
-      }
-
-      // KPIs
-      document.getElementById('kpiEps').textContent = fmt(d.currentEps);
-      document.getElementById('kpiPeakEps').textContent = 'Peak: ' + fmt(d.peakEps);
-      document.getElementById('kpiLatency').innerHTML = d.avgLatencyMs + '<small style="font-size:0.6em">ms</small>';
-      document.getElementById('kpiPeakLat').textContent = 'Peak: ' + d.peakLatency + 'ms';
-      document.getElementById('kpiGenerated').textContent = fmt(d.totalGenerated);
-      document.getElementById('kpiProcessed').textContent = 'Processed: ' + fmt(d.totalProcessed);
-      document.getElementById('kpiBatched').textContent = fmt(d.totalBatched);
-      document.getElementById('kpiDeferred').textContent = 'Deferred: ' + fmt(d.totalDeferredProcessed);
-      document.getElementById('kpiDropped').textContent = fmt(d.totalDropped);
-      document.getElementById('kpiCritLost').textContent = 'Critical Lost: ' + d.criticalLost;
-      document.getElementById('kpiQueue').textContent = fmt(d.queues.total);
-      document.getElementById('kpiPeakQ').textContent = 'Peak: ' + fmt(d.peakQueue);
-
-      // Elapsed
-      document.getElementById('elapsedDisp').textContent = d.elapsed + 's';
-
-      // Pressure
-      const pp = document.getElementById('pressurePill');
-      pp.className = 'pressure-pill ' + d.pressureLevel;
-      pp.textContent = d.pressureLevel;
-
-      // Queue breakdown
-      document.getElementById('qRaw').textContent = fmt(d.queues.raw);
-      document.getElementById('qCrit').textContent = fmt(d.queues.critical);
-      document.getElementById('qBatch').textContent = fmt(d.queues.batch);
-      document.getElementById('qDefer').textContent = fmt(d.queues.deferred);
-
-      // Charts
-      drawLineChart('chartThroughput', d.timeSeries.timestamps, d.timeSeries.throughput, COLORS.green, 'chartEpsVal', ' e/s');
-      drawLineChart('chartLatency', d.timeSeries.timestamps, d.timeSeries.latency, COLORS.yellow, 'chartLatVal', ' ms');
-      drawQueueChart(d.timeSeries);
-      drawGauge(d.pressureScore, d.pressureLevel);
-      drawDonut(d.decisionPct);
-      updateWorkers(d.workerUtilization);
-      updateDecisionTable(d.recentDecisions);
-
-      document.getElementById('chartQueueVal').textContent = fmt(d.queues.total);
-    }
-
-    /* ═══════════════════════════════════════════════════════════ */
-    /*  CANVAS CHART HELPERS                                      */
-    /* ═══════════════════════════════════════════════════════════ */
-    function setupCanvas(id) {
-      const canvas = document.getElementById(id);
-      const wrap = canvas.parentElement;
-      const dpr = window.devicePixelRatio || 1;
-      const w = wrap.clientWidth;
-      const h = wrap.clientHeight;
-      canvas.width = w * dpr;
-      canvas.height = h * dpr;
-      canvas.style.width = w + 'px';
-      canvas.style.height = h + 'px';
-      const ctx = canvas.getContext('2d');
-      ctx.scale(dpr, dpr);
-      return { ctx, w, h };
-    }
-
-    function drawLineChart(canvasId, timestamps, values, color, valElId, suffix) {
-      if (!values || values.length < 2) return;
-      const { ctx, w, h } = setupCanvas(canvasId);
-      const pad = { t: 10, r: 10, b: 28, l: 55 };
-      const cw = w - pad.l - pad.r;
-      const ch = h - pad.t - pad.b;
-
-      ctx.clearRect(0, 0, w, h);
-
-      // Grid
-      const maxV = Math.max(1, ...values) * 1.15;
-      const steps = 4;
-      ctx.strokeStyle = 'rgba(255,255,255,0.04)';
-      ctx.lineWidth = 1;
-      ctx.font = '10px "JetBrains Mono"';
-      ctx.fillStyle = '#475569';
-      ctx.textAlign = 'right';
-      for (let i = 0; i <= steps; i++) {
-        const y = pad.t + (ch / steps) * i;
-        ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
-        const v = maxV * (1 - i / steps);
-        ctx.fillText(v >= 1000 ? (v / 1000).toFixed(1) + 'k' : Math.round(v), pad.l - 6, y + 4);
-      }
-
-      // X labels
-      ctx.textAlign = 'center';
-      const xStep = Math.max(1, Math.floor(timestamps.length / 6));
-      for (let i = 0; i < timestamps.length; i += xStep) {
-        const x = pad.l + (i / (timestamps.length - 1)) * cw;
-        ctx.fillText(timestamps[i] + 's', x, h - 6);
-      }
-
-      // Line + gradient fill
-      ctx.beginPath();
-      for (let i = 0; i < values.length; i++) {
-        const x = pad.l + (i / (values.length - 1)) * cw;
-        const y = pad.t + ch * (1 - values[i] / maxV);
-        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-      }
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 2.5;
-      ctx.lineJoin = 'round';
-      ctx.stroke();
-
-      // Fill
-      const lastX = pad.l + cw;
-      const grad = ctx.createLinearGradient(0, pad.t, 0, pad.t + ch);
-      grad.addColorStop(0, color + '30');
-      grad.addColorStop(1, color + '00');
-      ctx.lineTo(lastX, pad.t + ch);
-      ctx.lineTo(pad.l, pad.t + ch);
-      ctx.closePath();
-      ctx.fillStyle = grad;
-      ctx.fill();
-
-      // Current value label
-      if (valElId) {
-        const last = values[values.length - 1];
-        document.getElementById(valElId).textContent = (last >= 1000 ? (last / 1000).toFixed(1) + 'k' : Math.round(last)) + (suffix || '');
+        const btnRun = document.getElementById('btnRun');
+        const btnStop = document.getElementById('btnStop');
+        if (btnRun) { btnRun.disabled = false; btnRun.classList.remove('opacity-50', 'cursor-not-allowed'); }
+        if (btnStop) { btnStop.disabled = true; btnStop.classList.add('opacity-50', 'cursor-not-allowed'); }
+        setVal('kpiActualEps', '0');
+        setVal('kpiTargetEps', '0');
+      } catch (e) {
+        console.error('Stop error:', e);
       }
     }
 
-    function drawQueueChart(ts) {
-      if (!ts.timestamps || ts.timestamps.length < 2) return;
-      const { ctx, w, h } = setupCanvas('chartQueue');
-      const pad = { t: 10, r: 10, b: 28, l: 55 };
-      const cw = w - pad.l - pad.r;
-      const ch = h - pad.t - pad.b;
-
-      ctx.clearRect(0, 0, w, h);
-
-      const series = [
-        { data: ts.queueCritical, color: COLORS.green, label: 'Critical' },
-        { data: ts.queueBatch, color: COLORS.blue, label: 'Batch' },
-        { data: ts.queueDeferred, color: COLORS.yellow, label: 'Deferred' },
-        { data: ts.queueRaw, color: COLORS.muted, label: 'Raw' },
-      ];
-
-      const allVals = series.flatMap(s => s.data);
-      const maxV = Math.max(10, ...allVals) * 1.15;
-
-      // Grid
-      const steps = 4;
-      ctx.strokeStyle = 'rgba(255,255,255,0.04)';
-      ctx.lineWidth = 1;
-      ctx.font = '10px "JetBrains Mono"';
-      ctx.fillStyle = '#475569';
-      ctx.textAlign = 'right';
-      for (let i = 0; i <= steps; i++) {
-        const y = pad.t + (ch / steps) * i;
-        ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
-        const v = maxV * (1 - i / steps);
-        ctx.fillText(v >= 1000 ? (v / 1000).toFixed(1) + 'k' : Math.round(v), pad.l - 6, y + 4);
-      }
-
-      // X labels
-      ctx.textAlign = 'center';
-      const xStep = Math.max(1, Math.floor(ts.timestamps.length / 6));
-      for (let i = 0; i < ts.timestamps.length; i += xStep) {
-        const x = pad.l + (i / (ts.timestamps.length - 1)) * cw;
-        ctx.fillText(ts.timestamps[i] + 's', x, h - 6);
-      }
-
-      // Lines
-      for (const s of series) {
-        ctx.beginPath();
-        for (let i = 0; i < s.data.length; i++) {
-          const x = pad.l + (i / (s.data.length - 1)) * cw;
-          const y = pad.t + ch * (1 - s.data[i] / maxV);
-          i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-        }
-        ctx.strokeStyle = s.color;
-        ctx.lineWidth = 2;
-        ctx.lineJoin = 'round';
-        ctx.stroke();
-      }
-
-      // Legend
-      ctx.font = '9px "Inter"';
-      let lx = pad.l;
-      for (const s of series) {
-        ctx.fillStyle = s.color;
-        ctx.fillRect(lx, pad.t - 2, 12, 3);
-        ctx.fillStyle = '#94a3b8';
-        ctx.textAlign = 'left';
-        ctx.fillText(s.label, lx + 16, pad.t + 3);
-        lx += ctx.measureText(s.label).width + 30;
+    async function triggerFlashSpike() {
+      document.getElementById('sliderSpikeMult').value = '25';
+      document.getElementById('sliderPatternSelect').value = 'SUDDEN_SPIKE';
+      document.getElementById('sliderDuration').value = '20';
+      onSliderChange();
+      if (!isRunning) {
+        await startSim();
+      } else {
+        await applySimulationConfig();
       }
     }
 
-    /* ═══════════════════════════════════════════════════════════ */
-    /*  GAUGE                                                     */
-    /* ═══════════════════════════════════════════════════════════ */
-    function drawGauge(score, level) {
-      const circ = 2 * Math.PI * 50;
-      const filled = score * circ;
-      const arc = document.getElementById('gaugeArc');
-      arc.setAttribute('stroke-dasharray', filled + ' ' + circ);
-      arc.setAttribute('stroke', PRESSURE_COLORS[level] || COLORS.green);
-
-      document.getElementById('gaugePct').textContent = Math.round(score * 100) + '%';
-      document.getElementById('gaugeLevel').textContent = level;
-      document.getElementById('gaugeLevel').setAttribute('fill', PRESSURE_COLORS[level] || COLORS.green);
-      document.getElementById('gaugeScoreText').textContent = 'Score: ' + score.toFixed(4);
-    }
-
-    /* ═══════════════════════════════════════════════════════════ */
-    /*  DONUT                                                     */
-    /* ═══════════════════════════════════════════════════════════ */
-    function drawDonut(pcts) {
-      if (!pcts) return;
-      const canvas = document.getElementById('chartDonut');
-      const dpr = window.devicePixelRatio || 1;
-      const wrap = canvas.parentElement;
-      const size = Math.min(wrap.clientWidth, wrap.clientHeight);
-      canvas.width = size * dpr;
-      canvas.height = size * dpr;
-      canvas.style.width = size + 'px';
-      canvas.style.height = size + 'px';
-      const ctx = canvas.getContext('2d');
-      ctx.scale(dpr, dpr);
-      ctx.clearRect(0, 0, size, size);
-
-      const cx = size / 2, cy = size / 2;
-      const r = size / 2 - 10;
-      const inner = r * 0.6;
-
-      const segments = [
-        { key: 'PROCESS', color: COLORS.green, pct: pcts.PROCESS || 0 },
-        { key: 'BATCH', color: COLORS.blue, pct: pcts.BATCH || 0 },
-        { key: 'DEFER', color: COLORS.yellow, pct: pcts.DEFER || 0 },
-        { key: 'DROP', color: COLORS.red, pct: pcts.DROP || 0 },
-      ];
-
-      const total = segments.reduce((a, s) => a + s.pct, 0) || 1;
-      let start = -Math.PI / 2;
-
-      for (const seg of segments) {
-        const angle = (seg.pct / total) * 2 * Math.PI;
-        if (angle < 0.01) continue;
-        ctx.beginPath();
-        ctx.arc(cx, cy, r, start, start + angle);
-        ctx.arc(cx, cy, inner, start + angle, start, true);
-        ctx.closePath();
-        ctx.fillStyle = seg.color;
-        ctx.fill();
-        start += angle;
+    async function onTopScenarioChange() {
+      const scen = document.getElementById('topScenarioSelect').value;
+      if (scen === 'FLASH_SALE') {
+        document.getElementById('sliderSpikeMult').value = '15';
+        document.getElementById('sliderPatternSelect').value = 'SUDDEN_SPIKE';
+      } else if (scen === 'BIG_BILLION_DAY') {
+        document.getElementById('sliderBaseEps').value = '5000';
+        document.getElementById('sliderSpikeMult').value = '10';
+        document.getElementById('sliderPatternSelect').value = 'GRADUAL_RAMP';
+      } else if (scen === 'BLACK_FRIDAY') {
+        document.getElementById('sliderBaseEps').value = '4000';
+        document.getElementById('sliderSpikeMult').value = '12';
+        document.getElementById('sliderPatternSelect').value = 'WAVE';
+      } else if (scen === 'RETRY_STORM') {
+        document.getElementById('sliderFailProb').value = '8';
+        document.getElementById('sliderDupProb').value = '20';
+      } else {
+        document.getElementById('sliderBaseEps').value = '1000';
+        document.getElementById('sliderSpikeMult').value = '5';
+        document.getElementById('sliderPatternSelect').value = 'SUDDEN_SPIKE';
       }
-
-      // Center text
-      ctx.fillStyle = '#f1f5f9';
-      ctx.font = 'bold 13px "JetBrains Mono"';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(Math.round(total) + '%', cx, cy);
-
-      // Update legend
-      document.getElementById('dlProcess').textContent = (pcts.PROCESS || 0).toFixed(1) + '%';
-      document.getElementById('dlBatch').textContent = (pcts.BATCH || 0).toFixed(1) + '%';
-      document.getElementById('dlDefer').textContent = (pcts.DEFER || 0).toFixed(1) + '%';
-      document.getElementById('dlDrop').textContent = (pcts.DROP || 0).toFixed(1) + '%';
+      onSliderChange();
+      await applySimulationConfig();
     }
 
-    /* ═══════════════════════════════════════════════════════════ */
-    /*  WORKERS                                                   */
-    /* ═══════════════════════════════════════════════════════════ */
-    function updateWorkers(util) {
-      if (!util) return;
-      const workers = [
-        { id: 'workerCritical', key: 'critical', color: COLORS.green },
-        { id: 'workerBatch', key: 'batch', color: COLORS.blue },
-        { id: 'workerDeferred', key: 'deferred', color: COLORS.yellow },
-      ];
-      for (const w of workers) {
-        const el = document.getElementById(w.id);
-        const pct = util[w.key] || 0;
-        el.querySelector('.worker-bar-pct').textContent = pct.toFixed(1) + '%';
-        const fill = el.querySelector('.worker-bar-fill');
-        fill.style.width = Math.min(100, pct) + '%';
-        // Color based on utilization
-        if (pct > 90) { fill.style.background = COLORS.red; el.querySelector('.worker-bar-pct').style.color = COLORS.red; }
-        else if (pct > 70) { fill.style.background = COLORS.orange; el.querySelector('.worker-bar-pct').style.color = COLORS.orange; }
-        else { fill.style.background = w.color; el.querySelector('.worker-bar-pct').style.color = w.color; }
+    async function purgeDLQ() {
+      try {
+        const res = await fetch(`${API}/api/dlq/purge`, { method: 'POST' });
+        const d = await res.json();
+        alert(`Purged ${d.purgedCount || 0} items from Dead Letter Queue.`);
+      } catch (e) {
+        alert('Purge error: ' + e.message);
       }
     }
 
-    /* ═══════════════════════════════════════════════════════════ */
-    /*  DECISION TABLE                                            */
-    /* ═══════════════════════════════════════════════════════════ */
-    function updateDecisionTable(decisions) {
-      if (!decisions || decisions.length === 0) return;
-      const tbody = document.getElementById('decTableBody');
-      tbody.innerHTML = decisions.slice(0, 25).map(d =>
-        `<tr>
-      <td>${d.time}</td>
-      <td><span class="badge badge-${d.eventType}">${d.eventType}</span></td>
-      <td>${d.queue}</td>
-      <td><span class="badge badge-${d.pressure}">${d.pressure}</span></td>
-      <td><span class="badge badge-${d.decision}">${d.decision}</span></td>
-      <td style="color:var(--text-secondary)">${d.reason}</td>
-      <td>${d.latency}ms</td>
-    </tr>`
-      ).join('');
+    async function clearDuplicates() {
+      try {
+        await fetch(`${API}/api/duplicates/clear`, { method: 'POST' });
+        alert('Quarantined duplicate queue cleared.');
+      } catch (e) {
+        alert('Clear error: ' + e.message);
+      }
     }
 
-    /* ═══════════════════════════════════════════════════════════ */
-    /*  INIT                                                      */
-    /* ═══════════════════════════════════════════════════════════ */
-    window.addEventListener('load', () => {
-      loadScenarios();
+    /* ──────────────── Initialization ──────────────── */
+    window.addEventListener('DOMContentLoaded', () => {
+      applyTheme(currentTheme);
+      initRouter();
       connectWS();
+      onSliderChange();
+      lucide.createIcons();
     });
   </script>
 </body>
